@@ -1,8 +1,7 @@
 <div align="center">
   <img src="docs/assets/icon-wide.png" alt="Caps Talk logo" width="360">
   <h1>Caps Talk</h1>
-  <p><strong>Hold Caps Lock. Speak. Release. Keep typing.</strong></p>
-  <p>Private-by-default push-to-talk dictation for Linux/X11, powered by local AI.</p>
+  <p>Push-to-talk dictation for Linux/X11, powered by local AI.</p>
 
   [![CI](https://github.com/farrantch/caps-talk/actions/workflows/ci.yml/badge.svg)](https://github.com/farrantch/caps-talk/actions/workflows/ci.yml)
   [![Latest release](https://img.shields.io/github/v/release/farrantch/caps-talk)](https://github.com/farrantch/caps-talk/releases/latest)
