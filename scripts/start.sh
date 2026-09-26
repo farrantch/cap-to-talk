@@ -48,7 +48,7 @@ wait_for_url() {
     return 1
 }
 
-# shellcheck disable=SC2329 # Invoked by cleanup.
+# shellcheck disable=SC2317,SC2329 # Invoked by cleanup.
 restore_keyboard() {
     [[ -n "${keyboard_state}" && -f "${keyboard_state}" ]] || return 0
     xkbcomp "${keyboard_state}" "${DISPLAY}" >/dev/null 2>&1 || true
@@ -56,7 +56,7 @@ restore_keyboard() {
     keyboard_state=""
 }
 
-# shellcheck disable=SC2329 # Invoked by the EXIT trap.
+# shellcheck disable=SC2317,SC2329 # Invoked by the EXIT trap.
 cleanup() {
     [[ "${cleaned_up}" == false ]] || return 0
     cleaned_up=true
