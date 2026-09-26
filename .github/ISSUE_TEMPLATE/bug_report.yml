@@ -1,5 +1,5 @@
 name: Bug report
-description: Report a reproducible problem with Cap to Talk
+description: Report a reproducible problem with Cap To Talk
 title: "[Bug]: "
 labels: [bug]
 body:
@@ -35,7 +35,7 @@ body:
     attributes:
       label: Reproduction steps
       placeholder: |
-        1. Start Cap to Talk
+        1. Start Cap To Talk
         2. Hold Caps Lock
         3. ...
     validations:

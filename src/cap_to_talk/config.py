@@ -1,4 +1,4 @@
-"""Configuration loading for Cap to Talk."""
+"""Configuration loading for Cap To Talk."""
 
 from __future__ import annotations
 

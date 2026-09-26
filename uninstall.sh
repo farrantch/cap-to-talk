@@ -65,4 +65,4 @@ if [[ "${purge}" == true ]]; then
     [[ "${state_dir}" == */cap-to-talk ]] && rm -rf -- "${state_dir}"
 fi
 
-echo "Cap to Talk was uninstalled. Shared OpenASR/Ollama files were preserved."
+echo "Cap To Talk was uninstalled. Shared OpenASR/Ollama files were preserved."

@@ -1,6 +1,6 @@
 # Contributing
 
-Thanks for helping improve Cap to Talk. Bug reports, documentation fixes, and
+Thanks for helping improve Cap To Talk. Bug reports, documentation fixes, and
 focused pull requests are welcome.
 
 ## Before opening an issue
@@ -13,7 +13,7 @@ focused pull requests are welcome.
 
 ## Development setup
 
-Cap to Talk targets Python 3.12+ on Linux/X11.
+Cap To Talk targets Python 3.12+ on Linux/X11.
 
 ```bash
 python3 -m venv .venv

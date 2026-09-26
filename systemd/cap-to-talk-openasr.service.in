@@ -1,5 +1,5 @@
 [Unit]
-Description=Cap to Talk local OpenASR server
+Description=Cap To Talk local OpenASR server
 Documentation=https://github.com/farrantch/cap-to-talk
 
 [Service]

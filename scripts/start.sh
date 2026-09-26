@@ -19,7 +19,7 @@ mkdir -p "${state_dir}"
 
 exec 9>"${lock_file}"
 if ! flock -n 9; then
-    echo "Cap to Talk is already running." >&2
+    echo "Cap To Talk is already running." >&2
     exit 0
 fi
 printf '%s\n' "$$" >"${pid_file}"
@@ -29,7 +29,7 @@ printf '%s\n' "$$" >"${pid_file}"
     exit 1
 }
 [[ "${XDG_SESSION_TYPE:-}" == "x11" ]] || {
-    echo "Cap to Talk requires an X11 desktop session." >&2
+    echo "Cap To Talk requires an X11 desktop session." >&2
     exit 1
 }
 [[ -n "${DISPLAY:-}" ]] || {

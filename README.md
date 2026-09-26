@@ -1,6 +1,6 @@
 <div align="center">
-  <img src="docs/assets/icon-wide.png" alt="Cap to Talk logo" width="360">
-  <h1>Cap to Talk</h1>
+  <img src="docs/assets/icon-wide.png" alt="Cap To Talk logo" width="360">
+  <h1>Cap To Talk</h1>
   <p><strong>Hold Caps Lock. Speak. Release. Keep typing.</strong></p>
   <p>Private-by-default push-to-talk dictation for Linux/X11, powered by local AI.</p>
 
@@ -10,9 +10,9 @@
   ![Platform: Linux/X11](https://img.shields.io/badge/platform-Linux%2FX11-ff6b5f.svg)
 </div>
 
-![Cap to Talk recording, transcription, cleanup, and insertion demo](docs/assets/demo.gif)
+![Cap To Talk recording, transcription, cleanup, and insertion demo](docs/assets/demo.gif)
 
-Cap to Talk turns Caps Lock into a system-wide dictation key. It records while
+Cap To Talk turns Caps Lock into a system-wide dictation key. It records while
 the key is held, transcribes with [OpenASR](https://github.com/QuintinShaw/openasr),
 optionally cleans up the wording with [Ollama](https://ollama.com/), and inserts
 the result into the window where you started speaking. The default setup runs
@@ -37,7 +37,7 @@ entirely on your machine and needs no cloud API key.
 - Python 3.12 or newer and a working microphone
 - About 3.5 GB for the default local models; 8 GB RAM is recommended
 
-Cap to Talk temporarily remaps Caps Lock while it runs and restores the prior
+Cap To Talk temporarily remaps Caps Lock while it runs and restores the prior
 keyboard layout when it exits normally.
 
 ## Quick install
@@ -51,7 +51,7 @@ cd cap-to-talk
 The installer shows its plan before changing anything. It installs missing
 desktop packages, downloads OpenASR and Ollama from their official installers
 when needed, pulls the two default models, configures autostart, and starts Cap
-to Talk. It may ask for your sudo password for system packages.
+To Talk. It may ask for your sudo password for system packages.
 
 Existing configuration and glossary files are preserved, so rerunning the
 installer is safe. For an unattended install, use `./install.sh --yes`; add
@@ -108,9 +108,9 @@ Edit these files with one term per line:
 - `~/.config/cap-to-talk/hotwords.txt` contains up to 128 focused recognition
   hints sent to OpenASR.
 - `~/.config/cap-to-talk/master-hotwords.txt` can hold a larger dictionary. Cap
-  to Talk selects contextually relevant spellings for the cleanup model.
+  To Talk selects contextually relevant spellings for the cleanup model.
 
-Blank lines and lines beginning with `#` are ignored. Restart Cap to Talk after
+Blank lines and lines beginning with `#` are ignored. Restart Cap To Talk after
 editing either file. The installer migrates existing glossary files from the
 older `~/.config/voice-dictate/` location without deleting the originals.
 
@@ -197,7 +197,7 @@ curl -f http://127.0.0.1:11434/api/tags
 ollama list
 ```
 
-Cap to Talk intentionally keeps the raw OpenASR result when Ollama cleanup
+Cap To Talk intentionally keeps the raw OpenASR result when Ollama cleanup
 fails, rather than losing the dictation.
 
 ## Uninstall
@@ -206,7 +206,7 @@ fails, rather than losing the dictation.
 ./uninstall.sh
 ```
 
-This removes Cap to Talk's environment, command links, autostart entry, and
+This removes Cap To Talk's environment, command links, autostart entry, and
 namespaced OpenASR service. Personal configuration and logs are preserved. Use
 `./uninstall.sh --purge` to remove those too. Shared OpenASR/Ollama installs and
 models are never removed automatically.
@@ -248,7 +248,7 @@ report vulnerabilities privately as described in [SECURITY.md](SECURITY.md).
 
 ## Acknowledgments
 
-Cap to Talk builds on [OpenASR](https://github.com/QuintinShaw/openasr),
+Cap To Talk builds on [OpenASR](https://github.com/QuintinShaw/openasr),
 [Ollama](https://ollama.com/), and the Qwen speech and language models. Review
 their repositories and model pages for their respective licenses and usage
 terms.
