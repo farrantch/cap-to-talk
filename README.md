@@ -18,17 +18,6 @@ optionally cleans up the wording with [Ollama](https://ollama.com/), and inserts
 the result into the window where you started speaking. The default setup runs
 entirely on your machine and needs no cloud API key.
 
-## Highlights
-
-- **Natural push-to-talk:** hold Caps Lock to record and release to insert.
-- **Two modes:** Caps Lock cleans up the transcript; Shift + Caps Lock inserts
-  the raw transcription.
-- **Local and private:** default OpenASR and Ollama endpoints use loopback only,
-  transcript logging is off, and temporary audio is deleted after each request.
-- **Right-window insertion:** remembers the original window while processing.
-- **Personal vocabulary:** recognition hints and a larger spelling glossary.
-- **Safe fallbacks:** inserts the raw transcript if cleanup is unavailable.
-
 ## Requirements
 
 - Ubuntu 24.04+ or a compatible Debian-based Linux distribution
@@ -63,27 +52,9 @@ checkout with `./scripts/start.sh`.
 
 Caps Talk starts after installation and automatically at future desktop logins.
 
-Both methods install the required packages and local models. The installer
-shows its plan first and preserves existing configuration when rerun. Add
-`--no-start` to leave Caps Talk stopped after installation or `--yes` for an
-unattended install; flags can be combined.
-
-<details>
-<summary>What the installer creates</summary>
-
-| Path | Purpose |
-| --- | --- |
-| `.venv/` | Project-local Python environment |
-| `~/.local/bin/caps-talk` | Command symlink |
-| `~/.config/caps-talk/` | Configuration and personal glossaries |
-| `~/.config/autostart/caps-talk.desktop` | Optional desktop-session autostart created by `--autostart` |
-| `~/.config/systemd/user/caps-talk-openasr.service` | Namespaced OpenASR service |
-| `~/.local/state/caps-talk/` | Runtime logs |
-
-Shared OpenASR and Ollama installations and downloaded models remain under
-their own management.
-
-</details>
+Both methods install the required packages and local models while preserving
+existing settings. Add `--no-start` to leave Caps Talk stopped after installation
+or `--yes` for an unattended install; flags can be combined.
 
 ## Use it
 
@@ -92,14 +63,11 @@ their own management.
 | Hold **Caps Lock**, then release | Transcribe, clean up, and insert |
 | Hold **Shift + Caps Lock**, then release | Transcribe and insert without cleanup |
 
-Check the complete local setup at any time:
+Check the setup at any time:
 
 ```bash
 caps-talk check
 ```
-
-If `~/.local/bin` is not on your shell's `PATH`, run
-`.venv/bin/caps-talk check` from the repository instead.
 
 ## Personal vocabulary
 
@@ -111,63 +79,22 @@ Edit these files with one term per line:
   Caps Talk selects contextually relevant spellings for the cleanup model.
 
 Blank lines and lines beginning with `#` are ignored. Restart Caps Talk after
-editing either file. When upgrading from version 0.1.0, the installer copies
-configuration and glossaries from `~/.config/cap-to-talk/`; it can also migrate
-glossaries from the older `~/.config/voice-dictate/` location. The originals
-are not deleted.
+editing either file.
 
 ## Configuration
 
-The installer creates `~/.config/caps-talk/config.toml` from
-[`config/config.example.toml`](config/config.example.toml). Every option is
-optional; the shipped file documents all defaults.
-
-```toml
-[audio]
-post_roll_seconds = 0.25
-
-[services]
-asr_url = "http://127.0.0.1:8080/v1/audio/transcriptions"
-rewrite_model = "qwen3:4b-instruct"
-
-[output]
-typing_delay_ms = 0
-
-[privacy]
-debug_transcripts = false
-```
-
-Useful environment overrides include:
-
-| Variable | Purpose |
-| --- | --- |
-| `CAPS_TALK_PTT_KEYCODE` | X11 keycode used for push-to-talk |
-| `CAPS_TALK_ASR_URL` | OpenASR transcription endpoint |
-| `CAPS_TALK_OLLAMA_URL` | Ollama chat endpoint |
-| `CAPS_TALK_REWRITE_MODEL` | Ollama cleanup model |
-| `CAPS_TALK_TYPING_DELAY_MS` | Delay between synthetic keystrokes |
-
-Run with another configuration file using
-`caps-talk --config /path/to/config.toml`. Command-line `--debug` enables
-debug logging, including transcript contents, for that run.
-
-The previous `cap-to-talk` command and `CAP_TO_TALK_*` environment variables
-remain supported as compatibility aliases. New configuration should use the
-`caps-talk` and `CAPS_TALK_*` names.
+Edit `~/.config/caps-talk/config.toml` to change audio, service, output, or
+privacy settings. All available options and defaults are documented in
+[`config/config.example.toml`](config/config.example.toml).
 
 ## Privacy
 
-With the default configuration, microphone audio goes only to OpenASR on
-`127.0.0.1`, and transcript text goes only to Ollama on `127.0.0.1`. No cloud
-service or API key is involved.
+By default, audio and transcript text stay on your machine. Temporary audio is
+deleted after each request, and transcripts are not logged unless debug logging
+is enabled.
 
-A WAV file briefly exists in the operating system's temporary directory during
-transcription and is deleted immediately afterward, including on request
-failure. Transcript contents are not logged unless `--debug` or
-`debug_transcripts = true` is enabled. Changing service URLs to remote hosts
-changes these privacy assumptions.
-
-## Troubleshooting
+<details>
+<summary>Troubleshooting</summary>
 
 Start with:
 
@@ -203,8 +130,9 @@ curl -f http://127.0.0.1:11434/api/tags
 ollama list
 ```
 
-Caps Talk intentionally keeps the raw OpenASR result when Ollama cleanup
-fails, rather than losing the dictation.
+Caps Talk uses the raw transcript when cleanup is unavailable.
+
+</details>
 
 ## Uninstall
 
@@ -212,10 +140,8 @@ fails, rather than losing the dictation.
 ./uninstall.sh
 ```
 
-This removes Caps Talk's environment, command links, autostart entry, and
-namespaced OpenASR service. Personal configuration and logs are preserved. Use
-`./uninstall.sh --purge` to remove those too. Shared OpenASR/Ollama installs and
-models are never removed automatically.
+Personal settings and logs are preserved. Use `./uninstall.sh --purge` to remove
+them too. Shared OpenASR and Ollama installations are left alone.
 
 <details>
 <summary>Manual setup and non-Debian distributions</summary>
@@ -243,18 +169,10 @@ on-demand use.
 
 </details>
 
-## Development
+## Contributing
 
-```bash
-python3 -m venv .venv
-.venv/bin/pip install -e '.[dev]'
-.venv/bin/ruff check .
-.venv/bin/ruff format --check .
-.venv/bin/pytest
-```
-
-See [CONTRIBUTING.md](CONTRIBUTING.md) before opening a pull request. Please
-report vulnerabilities privately as described in [SECURITY.md](SECURITY.md).
+See [CONTRIBUTING.md](CONTRIBUTING.md) for development setup. Report security
+issues privately as described in [SECURITY.md](SECURITY.md).
 
 ## Acknowledgments
 
