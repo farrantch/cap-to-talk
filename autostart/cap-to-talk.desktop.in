@@ -1,6 +1,6 @@
 [Desktop Entry]
 Type=Application
-Name=Caps Lock Voice Dictation
+Name=Cap to Talk
 Comment=Hold Caps Lock to dictate into the active X11 window
 Exec=@PROJECT_DIR@/scripts/start.sh
 Terminal=false

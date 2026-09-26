@@ -27,8 +27,8 @@ fi
 
 escaped_project_dir="${project_dir//|/\\|}"
 sed "s|@PROJECT_DIR@|${escaped_project_dir}|g" \
-    "${project_dir}/autostart/capslock-voice-dictation.desktop.in" \
-    >"${autostart_dir}/capslock-voice-dictation.desktop"
+    "${project_dir}/autostart/cap-to-talk.desktop.in" \
+    >"${autostart_dir}/cap-to-talk.desktop"
 
 chmod +x "${project_dir}/scripts/start.sh"
 

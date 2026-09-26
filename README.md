@@ -1,4 +1,4 @@
-# Caps Lock Voice Dictation
+# Cap to Talk
 
 Local, push-to-talk dictation for Linux/X11. Hold **Caps Lock** to record,
 release it to transcribe, and the cleaned-up text is inserted into the window
@@ -83,8 +83,8 @@ curl -sf http://127.0.0.1:11434/api/tags >/dev/null && echo "Ollama is ready"
 ### 3. Install the dictation app
 
 ```bash
-git clone git@github.com:farrantch/capslock-voice-dictation.git
-cd capslock-voice-dictation
+git clone git@github.com:farrantch/cap-to-talk.git
+cd cap-to-talk
 chmod +x scripts/install-user.sh scripts/start.sh
 ./scripts/install-user.sh
 ```
@@ -125,7 +125,7 @@ after changing either file.
 
 ## Configuration
 
-The defaults are near the top of `src/capslock_voice.py`:
+The defaults are near the top of `src/cap_to_talk.py`:
 
 | Setting | Default | Purpose |
 | --- | --- | --- |

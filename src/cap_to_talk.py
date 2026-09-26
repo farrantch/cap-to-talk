@@ -88,7 +88,7 @@ def notify(message, timeout=1500):
                 "notify-send",
                 "-r", NOTIFY_ID,
                 "-t", str(timeout),
-                "Voice Dictation",
+                "Cap to Talk",
                 message,
             ],
             stdout=subprocess.DEVNULL,
@@ -848,7 +848,7 @@ def keyboard_loop():
     d.sync()
 
     print(
-        "Voice dictation ready.",
+        "Cap to Talk ready.",
         flush=True,
     )
 
@@ -862,7 +862,7 @@ def keyboard_loop():
         flush=True,
     )
 
-    notify("Voice dictation ready", 1200)
+    notify("Cap to Talk ready", 1200)
 
     try:
         while True:

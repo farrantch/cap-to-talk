@@ -34,4 +34,4 @@ for _ in {1..30}; do
     sleep 1
 done
 
-exec "${python_bin}" "${project_dir}/src/capslock_voice.py"
+exec "${python_bin}" "${project_dir}/src/cap_to_talk.py"
