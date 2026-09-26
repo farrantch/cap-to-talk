@@ -1,6 +1,6 @@
 # Changelog
 
-All notable changes to Cap to Talk are documented here. This project follows
+All notable changes to Cap To Talk are documented here. This project follows
 [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]

@@ -15,7 +15,7 @@ Usage: ./install.sh [options]
 
 Options:
   -y, --yes                   Skip the confirmation prompt
-      --no-start              Install without starting Cap to Talk
+      --no-start              Install without starting Cap To Talk
       --skip-system-packages  Do not use apt-get
   -h, --help                  Show this help
 EOF
@@ -75,7 +75,7 @@ if [[ "${XDG_SESSION_TYPE:-}" == "wayland" ]]; then
 fi
 
 cat <<'EOF'
-Cap to Talk will:
+Cap To Talk will:
   • install missing Ubuntu/Debian desktop packages (with sudo)
   • install OpenASR and Ollama from their official installers if missing
   • download roughly 3.5 GB of local models
@@ -83,7 +83,7 @@ Cap to Talk will:
   • add a namespaced OpenASR user service and desktop autostart entry
 
 Existing glossary files are preserved. Shared OpenASR and Ollama installations
-are never removed by Cap to Talk.
+are never removed by Cap To Talk.
 EOF
 
 if [[ "${assume_yes}" != true ]]; then
@@ -159,7 +159,7 @@ sed "s|@OPENASR_BIN@|${escaped_openasr_bin}|g" \
 systemctl --user daemon-reload
 
 if ! wait_for_url http://127.0.0.1:8080/health 2; then
-    log "Starting the Cap to Talk OpenASR service"
+    log "Starting the Cap To Talk OpenASR service"
     systemctl --user enable --now cap-to-talk-openasr.service
 fi
 
@@ -185,7 +185,7 @@ wait_for_url http://127.0.0.1:11434/api/tags 30 \
 log "Preparing the cleanup model"
 ollama pull "${rewrite_model}"
 
-log "Installing Cap to Talk"
+log "Installing Cap To Talk"
 "${project_dir}/scripts/install-user.sh"
 
 wait_for_url http://127.0.0.1:8080/health 60 \
@@ -194,7 +194,7 @@ wait_for_url http://127.0.0.1:8080/health 60 \
 if [[ "${start_app}" == true && "${XDG_SESSION_TYPE:-}" == "x11" \
     && -n "${DISPLAY:-}" ]]; then
     nohup "${project_dir}/scripts/start.sh" >/dev/null 2>&1 &
-    printf '\nInstalled. Cap to Talk is starting; hold Caps Lock to try it.\n'
+    printf '\nInstalled. Cap To Talk is starting; hold Caps Lock to try it.\n'
 else
     printf '\nInstalled. It will start automatically in your next X11 session.\n'
 fi

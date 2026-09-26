@@ -1,4 +1,4 @@
-"""Command-line entry point for Cap to Talk."""
+"""Command-line entry point for Cap To Talk."""
 
 from __future__ import annotations
 
@@ -123,7 +123,7 @@ def main(argv: list[str] | None = None) -> int:
     try:
         VoiceDictationApp(settings).run()
     except KeyboardInterrupt:
-        logging.getLogger(__name__).info("Cap to Talk stopped")
+        logging.getLogger(__name__).info("Cap To Talk stopped")
     return 0
 
 

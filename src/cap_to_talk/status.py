@@ -29,7 +29,7 @@ def notify(settings: Settings, message: str, timeout: int = 1_500) -> None:
                 settings.notify_id,
                 "-t",
                 str(timeout),
-                "Cap to Talk",
+                "Cap To Talk",
                 message,
             ],
             stdout=subprocess.DEVNULL,

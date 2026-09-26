@@ -197,8 +197,8 @@ class VoiceDictationApp:
             X.GrabModeAsync,
         )
         x_display.sync()
-        LOGGER.info("Cap to Talk ready")
-        notify(self.settings, "Cap to Talk ready", 1_200)
+        LOGGER.info("Cap To Talk ready")
+        notify(self.settings, "Cap To Talk ready", 1_200)
 
         try:
             while True:
