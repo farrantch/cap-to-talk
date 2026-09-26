@@ -20,84 +20,68 @@ No cloud API key is required.
 - Shows desktop notifications and an optional corner status overlay.
 - Deletes each temporary WAV after transcription.
 
-## Requirements
+## Quick install
 
-This implementation targets an **X11 desktop session**. It does not support
-native Wayland because it grabs a global X11 key and types with `xdotool`.
-
-- Linux with X11
-- Python 3.10+
-- [OpenASR](https://github.com/QuintinShaw/openasr) with the
-  `qwen3-asr-0.6b` model
-- [Ollama](https://ollama.com/) with the `qwen3:4b-instruct` model
-- A working microphone
-
-On Ubuntu/Debian, install the desktop and audio dependencies:
-
-```bash
-sudo apt update
-sudo apt install \
-  curl libnotify-bin libportaudio2 python3-tk python3-venv \
-  x11-xserver-utils xdotool xprintidle
-```
-
-## Setup
-
-### 1. Install and start OpenASR
-
-Follow the [OpenASR installation instructions](https://github.com/QuintinShaw/openasr#install),
-then download the model:
-
-```bash
-openasr pull qwen3-asr-0.6b:q8
-```
-
-For a quick test, run the local server in a terminal:
-
-```bash
-openasr serve --model qwen3-asr-0.6b --addr 127.0.0.1:8080
-```
-
-To run it as a user service, install the included template from the repository
-directory:
-
-```bash
-mkdir -p ~/.config/systemd/user
-sed "s|@OPENASR_BIN@|$(command -v openasr)|" \
-  systemd/openasr.service.in \
-  > ~/.config/systemd/user/openasr.service
-systemctl --user daemon-reload
-systemctl --user enable --now openasr.service
-```
-
-### 2. Install Ollama and the rewrite model
-
-Install Ollama using its [Linux instructions](https://docs.ollama.com/linux),
-make sure the service is running, and pull the model:
-
-```bash
-ollama pull qwen3:4b-instruct
-curl -sf http://127.0.0.1:11434/api/tags >/dev/null && echo "Ollama is ready"
-```
-
-### 3. Install the dictation app
+On an Ubuntu or Debian X11 desktop:
 
 ```bash
 git clone git@github.com:farrantch/cap-to-talk.git
 cd cap-to-talk
-chmod +x scripts/install-user.sh scripts/start.sh
-./scripts/install-user.sh
+./install.sh
 ```
 
-The installer creates `.venv`, installs the Python packages, adds safe example
-glossaries under `~/.config/voice-dictate/`, and creates an XDG autostart entry.
-It leaves existing glossary files untouched.
+The installer may ask for your sudo password and downloads several gigabytes of
+local models. It:
 
-Log out and back in, or start it immediately:
+- installs the required Ubuntu/Debian packages;
+- installs [OpenASR](https://github.com/QuintinShaw/openasr) and
+  [Ollama](https://ollama.com/) if they are missing;
+- downloads the `qwen3-asr-0.6b` and `qwen3:4b-instruct` models;
+- creates and starts the local OpenASR service;
+- creates the Python environment, example glossaries, and desktop autostart
+  entry; and
+- starts Cap to Talk immediately when run from an X11 desktop.
+
+Existing glossary files are preserved, so the installer is safe to rerun.
+Review `install.sh` first if you prefer not to run automated installers.
+
+Cap to Talk requires **X11** and a working microphone. Native Wayland is not
+supported because the app grabs a global X11 key and inserts text with
+`xdotool`.
+
+<details>
+<summary>Manual setup or other Linux distributions</summary>
+
+Install equivalents for these Ubuntu packages:
+
+```text
+curl libnotify-bin libportaudio2 python3-tk python3-venv
+x11-xserver-utils xdotool xprintidle
+```
+
+Install OpenASR using its
+[official instructions](https://github.com/QuintinShaw/openasr#install), then:
 
 ```bash
+openasr pull qwen3-asr-0.6b:q8
+openasr serve --model qwen3-asr-0.6b --addr 127.0.0.1:8080
+```
+
+In another terminal, install Ollama using its
+[official Linux instructions](https://docs.ollama.com/linux), then:
+
+```bash
+ollama pull qwen3:4b-instruct
+```
+
+Finally, from the repository directory:
+
+```bash
+./scripts/install-user.sh
 ./scripts/start.sh
 ```
+
+</details>
 
 ## Usage
 

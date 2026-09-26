@@ -9,7 +9,7 @@ sleep "${VOICE_STARTUP_DELAY:-2}"
 
 if [[ ! -x "${python_bin}" ]]; then
     echo "Python environment not found: ${python_bin}" >&2
-    echo "Run ./scripts/install-user.sh first." >&2
+    echo "Run ./install.sh first." >&2
     exit 1
 fi
 
