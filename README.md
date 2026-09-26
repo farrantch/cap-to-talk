@@ -23,12 +23,11 @@ entirely on your machine and needs no cloud API key.
 - **Natural push-to-talk:** hold Caps Lock to record and release to insert.
 - **Two modes:** Caps Lock cleans up the transcript; Shift + Caps Lock inserts
   the raw transcription.
-- **Local processing:** default OpenASR and Ollama endpoints use loopback only.
+- **Local and private:** default OpenASR and Ollama endpoints use loopback only,
+  transcript logging is off, and temporary audio is deleted after each request.
 - **Right-window insertion:** remembers the original window while processing.
 - **Personal vocabulary:** recognition hints and a larger spelling glossary.
 - **Safe fallbacks:** inserts the raw transcript if cleanup is unavailable.
-- **Privacy-conscious defaults:** transcript logging is off and temporary audio
-  is deleted after each request.
 
 ## Requirements
 
@@ -40,22 +39,34 @@ entirely on your machine and needs no cloud API key.
 Caps Talk temporarily remaps Caps Lock while it runs and restores the prior
 keyboard layout when it exits normally.
 
-## Quick install
+## Install
 
 ```bash
 git clone https://github.com/farrantch/caps-talk.git
 cd caps-talk
+```
+
+### On demand (default)
+
+```bash
 ./install.sh
 ```
 
-The installer shows its plan before changing anything. It installs missing
-desktop packages, downloads OpenASR and Ollama from their official installers
-when needed, pulls the two default models, configures autostart, and starts
-Caps Talk. It may ask for your sudo password for system packages.
+Caps Talk starts after installation. After a later login, start it from the
+checkout with `./scripts/start.sh`.
 
-Existing configuration and glossary files are preserved, so rerunning the
-installer is safe. For an unattended install, use `./install.sh --yes`; add
-`--no-start` to wait until the next login before starting the app.
+### Start at login
+
+```bash
+./install.sh --autostart
+```
+
+Caps Talk starts after installation and automatically at future desktop logins.
+
+Both methods install the required packages and local models. The installer
+shows its plan first and preserves existing configuration when rerun. Add
+`--no-start` to leave Caps Talk stopped after installation or `--yes` for an
+unattended install; flags can be combined.
 
 <details>
 <summary>What the installer creates</summary>
@@ -65,7 +76,7 @@ installer is safe. For an unattended install, use `./install.sh --yes`; add
 | `.venv/` | Project-local Python environment |
 | `~/.local/bin/caps-talk` | Command symlink |
 | `~/.config/caps-talk/` | Configuration and personal glossaries |
-| `~/.config/autostart/caps-talk.desktop` | Desktop-session autostart |
+| `~/.config/autostart/caps-talk.desktop` | Optional desktop-session autostart created by `--autostart` |
 | `~/.config/systemd/user/caps-talk-openasr.service` | Namespaced OpenASR service |
 | `~/.local/state/caps-talk/` | Runtime logs |
 
@@ -89,17 +100,6 @@ caps-talk check
 
 If `~/.local/bin` is not on your shell's `PATH`, run
 `.venv/bin/caps-talk check` from the repository instead.
-
-The flow is deliberately simple:
-
-```mermaid
-flowchart LR
-    A[Hold Caps Lock] --> B[Record microphone]
-    B --> C[OpenASR transcript]
-    C --> D[Ollama cleanup]
-    D --> E[Insert in original window]
-    C -->|Shift held or cleanup unavailable| E
-```
 
 ## Personal vocabulary
 
@@ -236,6 +236,10 @@ user-local setup:
 ./scripts/install-user.sh
 ./scripts/start.sh
 ```
+
+Pass `--autostart` to `install-user.sh` if Caps Talk should start automatically
+at desktop login. Without that flag, the setup is idempotently configured for
+on-demand use.
 
 </details>
 

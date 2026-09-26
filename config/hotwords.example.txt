@@ -1,7 +1,113 @@
-# One spelling per line. These terms are sent to OpenASR as recognition hints.
-OpenASR
-Ollama
-Qwen
+# Focused technical spellings sent to OpenASR as recognition hints.
+# Keep this file to 128 terms or fewer; use the master glossary for extras.
+Ansible
+Arch Linux
+ArduPilot
+Aruba
+Astro
+AWS
+Azure
+Bitbucket
+Brocade
+Caddy
+Cassandra
+Ceph
+ChatGPT
+Cloudflare
+CloudFormation
+CloudFront
+Codex
+Codex CLI
+CUDA
+Debian
+Docker
+Docker Compose
+EC2
+ECS
+EKS
+Elasticsearch
+ESP32
+ESPHome
+Fedora
 GitHub
+GitHub Actions
+GitLab
+GNOME
+GNSS
+Google Cloud
+Grafana
+Home Assistant
+HomeKit
+Hugging Face
+IAM
+Kafka
+Kubernetes
+KVM
+Lambda
+LXC
+MariaDB
+MAVLink
+MikroTik
+MongoDB
+MQTT
+NetBird
+Netlify
+NGINX
+Node.js
+npm
+NVIDIA
+Ollama
+OpenAI
+OpenASR
+OpenSearch
+OpenWrt
+OPNsense
+pfSense
+PipeWire
+pnpm
+PoE
+PostgreSQL
+Prometheus
+Proxmox
+Proxmox VE
+PulseAudio
 Python
+PyTorch
+QEMU
+Qwen
+Qwen3
+RabbitMQ
+RAIDZ
 RapidFuzz
+RDS
+Redis
+ROCm
+Route 53
+RTK
+Ruckus
+S3
+SQLite
+SSH
+Synology
+systemd
+Tailscale
+TensorFlow
+Terraform
+TrueNAS
+TrueNAS SCALE
+Ubiquiti
+Ubuntu
+UniFi
+UniFi Protect
+VirtualBox
+Visual Studio Code
+VLAN
+VMware
+VS Code
+Wayland
+Whisper
+WireGuard
+X11
+Z-Wave
+ZFS
+Zigbee

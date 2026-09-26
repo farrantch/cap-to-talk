@@ -8,6 +8,7 @@ rewrite_model="qwen3:4b-instruct"
 assume_yes=false
 start_app=true
 install_packages=true
+enable_autostart=false
 
 usage() {
     cat <<'EOF'
@@ -15,6 +16,7 @@ Usage: ./install.sh [options]
 
 Options:
   -y, --yes                   Skip the confirmation prompt
+      --autostart             Start Caps Talk automatically at desktop login
       --no-start              Install without starting Caps Talk
       --skip-system-packages  Do not use apt-get
   -h, --help                  Show this help
@@ -60,6 +62,7 @@ run_official_installer() {
 while (($#)); do
     case "$1" in
         -y|--yes) assume_yes=true ;;
+        --autostart) enable_autostart=true ;;
         --no-start) start_app=false ;;
         --skip-system-packages) install_packages=false ;;
         -h|--help) usage; exit 0 ;;
@@ -80,7 +83,16 @@ Caps Talk will:
   • install OpenASR and Ollama from their official installers if missing
   • download roughly 3.5 GB of local models
   • create a Python virtual environment inside this checkout
-  • add a namespaced OpenASR user service and desktop autostart entry
+  • add a namespaced OpenASR user service
+EOF
+
+if [[ "${enable_autostart}" == true ]]; then
+    printf '  • start Caps Talk automatically at desktop login\n'
+else
+    printf '  • configure Caps Talk for on-demand use (the default)\n'
+fi
+
+cat <<'EOF'
 
 Existing glossary files are preserved. Shared OpenASR and Ollama installations
 are never removed by Caps Talk.
@@ -192,7 +204,11 @@ log "Preparing the cleanup model"
 ollama pull "${rewrite_model}"
 
 log "Installing Caps Talk"
-"${project_dir}/scripts/install-user.sh"
+if [[ "${enable_autostart}" == true ]]; then
+    "${project_dir}/scripts/install-user.sh" --autostart
+else
+    "${project_dir}/scripts/install-user.sh"
+fi
 
 wait_for_url http://127.0.0.1:8080/health 60 \
     || fail "OpenASR did not become ready. Check its user service."
@@ -202,5 +218,9 @@ if [[ "${start_app}" == true && "${XDG_SESSION_TYPE:-}" == "x11" \
     nohup "${project_dir}/scripts/start.sh" >/dev/null 2>&1 &
     printf '\nInstalled. Caps Talk is starting; hold Caps Lock to try it.\n'
 else
-    printf '\nInstalled. It will start automatically in your next X11 session.\n'
+    if [[ "${enable_autostart}" == true ]]; then
+        printf '\nInstalled. It will start automatically in your next X11 session.\n'
+    else
+        printf '\nInstalled. Start it on demand with ./scripts/start.sh.\n'
+    fi
 fi

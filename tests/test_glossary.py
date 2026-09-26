@@ -6,6 +6,8 @@ from caps_talk.glossary import (
     select_relevant_terms,
 )
 
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+
 
 def test_load_terms_ignores_comments_duplicates_and_long_values(tmp_path: Path):
     path = tmp_path / "terms.txt"
@@ -31,3 +33,14 @@ def test_selects_literal_and_fuzzy_terms():
 
 def test_glossary_normalize():
     assert glossary_normalize("Qwen3-ASR 0.6B") == "qwen3 asr 0 6b"
+
+
+def test_example_hotwords_fit_limits_and_are_in_master_glossary():
+    hotwords = load_terms(PROJECT_ROOT / "config/hotwords.example.txt")
+    master_terms = load_terms(PROJECT_ROOT / "config/master-hotwords.example.txt")
+
+    assert len(hotwords) <= 128
+    assert sum(map(len, hotwords)) <= 4_000
+    assert {term.casefold() for term in hotwords} <= {
+        term.casefold() for term in master_terms
+    }
