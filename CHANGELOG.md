@@ -5,6 +5,13 @@ All notable changes to Caps Talk are documented here. This project follows
 
 ## [Unreleased]
 
+### Changed
+
+- Made on-demand installation the default and added an explicit `--autostart`
+  installer flag for starting Caps Talk at desktop login.
+- Expanded the example hotword and master glossary files with the complete
+  technical vocabulary set.
+
 ## [0.2.0] - 2026-09-26
 
 ### Changed

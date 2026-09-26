@@ -10,6 +10,26 @@ legacy_voice_config_dir="${config_root}/voice-dictate"
 autostart_dir="${config_root}/autostart"
 state_dir="${XDG_STATE_HOME:-${HOME}/.local/state}/caps-talk"
 bin_dir="${HOME}/.local/bin"
+enable_autostart=false
+
+usage() {
+    cat <<'EOF'
+Usage: ./scripts/install-user.sh [--autostart]
+
+Options:
+      --autostart  Start Caps Talk automatically at desktop login
+  -h, --help       Show this help
+EOF
+}
+
+while (($#)); do
+    case "$1" in
+        --autostart) enable_autostart=true ;;
+        -h|--help) usage; exit 0 ;;
+        *) echo "Unknown option: $1" >&2; exit 2 ;;
+    esac
+    shift
+done
 
 python3 -c 'import sys; raise SystemExit(sys.version_info < (3, 12))' \
     || { echo "Python 3.12 or newer is required." >&2; exit 1; }
@@ -24,7 +44,7 @@ if [[ -d "${legacy_metadata_dir}" ]]; then
 fi
 "${project_dir}/.venv/bin/python" -m pip install --editable "${project_dir}"
 
-mkdir -p "${config_dir}" "${autostart_dir}" "${state_dir}" "${bin_dir}"
+mkdir -p "${config_dir}" "${state_dir}" "${bin_dir}"
 
 link_command() {
     local command_name="$1"
@@ -72,11 +92,6 @@ install_if_missing \
     "${legacy_cap_config_dir}/config.toml" \
     "${project_dir}/config/config.example.toml"
 
-escaped_project_dir="${project_dir//|/\\|}"
-sed "s|@PROJECT_DIR@|${escaped_project_dir}|g" \
-    "${project_dir}/autostart/caps-talk.desktop.in" \
-    >"${autostart_dir}/caps-talk.desktop"
-
 for legacy_desktop in \
     "${autostart_dir}/cap-to-talk.desktop" \
     "${autostart_dir}/capslock-voice-dictation.desktop"; do
@@ -86,4 +101,18 @@ for legacy_desktop in \
     fi
 done
 
-printf 'Installed the commands, configuration, and desktop autostart entry.\n'
+autostart_file="${autostart_dir}/caps-talk.desktop"
+if [[ "${enable_autostart}" == true ]]; then
+    mkdir -p "${autostart_dir}"
+    escaped_project_dir="${project_dir//|/\\|}"
+    sed "s|@PROJECT_DIR@|${escaped_project_dir}|g" \
+        "${project_dir}/autostart/caps-talk.desktop.in" \
+        >"${autostart_file}"
+    printf 'Installed the commands and configuration; desktop autostart is enabled.\n'
+else
+    if [[ -f "${autostart_file}" ]] \
+        && grep -Fq "${project_dir}/scripts/start.sh" "${autostart_file}"; then
+        rm -f -- "${autostart_file}"
+    fi
+    printf 'Installed the commands and configuration for on-demand use.\n'
+fi
