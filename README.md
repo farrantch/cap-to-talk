@@ -1,80 +1,230 @@
-# Cap to Talk
+<div align="center">
+  <img src="docs/assets/icon.png" alt="Cap to Talk icon" width="144">
+  <h1>Cap to Talk</h1>
+  <p><strong>Hold Caps Lock. Speak. Release. Keep typing.</strong></p>
+  <p>Private-by-default push-to-talk dictation for Linux/X11, powered by local AI.</p>
 
-Local, push-to-talk dictation for Linux/X11. Hold **Caps Lock** to record,
-release it to transcribe, and the cleaned-up text is inserted into the window
-where dictation started.
+  [![CI](https://github.com/farrantch/cap-to-talk/actions/workflows/ci.yml/badge.svg)](https://github.com/farrantch/cap-to-talk/actions/workflows/ci.yml)
+  [![Latest release](https://img.shields.io/github/v/release/farrantch/cap-to-talk)](https://github.com/farrantch/cap-to-talk/releases/latest)
+  [![License: MIT](https://img.shields.io/badge/license-MIT-31c3e0.svg)](LICENSE)
+  ![Platform: Linux/X11](https://img.shields.io/badge/platform-Linux%2FX11-ff6b5f.svg)
+</div>
 
-`Caps Lock → microphone → OpenASR → Ollama cleanup → xdotool insertion`
+![Cap to Talk recording, transcription, cleanup, and insertion demo](docs/assets/demo.gif)
 
-All speech recognition and rewriting use services on `127.0.0.1` by default.
-No cloud API key is required.
+Cap to Talk turns Caps Lock into a system-wide dictation key. It records while
+the key is held, transcribes with [OpenASR](https://github.com/QuintinShaw/openasr),
+optionally cleans up the wording with [Ollama](https://ollama.com/), and inserts
+the result into the window where you started speaking. The default setup runs
+entirely on your machine and needs no cloud API key.
 
-## Features
+## Highlights
 
-- **Caps Lock** records and inserts a cleaned-up transcript.
-- **Shift + Caps Lock** skips the rewrite and inserts raw transcription.
-- Remembers the target window even if focus changes while processing.
-- Waits for a keyboard/mouse pause before temporarily returning to the target.
-- Uses personal hotword lists to improve technical spellings.
-- Falls back to raw transcription if Ollama is unavailable.
-- Shows desktop notifications and an optional corner status overlay.
-- Deletes each temporary WAV after transcription.
+- **Natural push-to-talk:** hold Caps Lock to record and release to insert.
+- **Two modes:** Caps Lock cleans up the transcript; Shift + Caps Lock inserts
+  the raw transcription.
+- **Local processing:** default OpenASR and Ollama endpoints use loopback only.
+- **Right-window insertion:** remembers the original window while processing.
+- **Personal vocabulary:** recognition hints and a larger spelling glossary.
+- **Safe fallbacks:** inserts the raw transcript if cleanup is unavailable.
+- **Privacy-conscious defaults:** transcript logging is off and temporary audio
+  is deleted after each request.
+
+## Requirements
+
+- Ubuntu 24.04+ or a compatible Debian-based Linux distribution
+- An **X11** desktop session (native Wayland is not yet supported)
+- Python 3.12 or newer and a working microphone
+- About 3.5 GB for the default local models; 8 GB RAM is recommended
+
+Cap to Talk temporarily remaps Caps Lock while it runs and restores the prior
+keyboard layout when it exits normally.
 
 ## Quick install
 
-On an Ubuntu or Debian X11 desktop:
-
 ```bash
-git clone git@github.com:farrantch/cap-to-talk.git
+git clone https://github.com/farrantch/cap-to-talk.git
 cd cap-to-talk
 ./install.sh
 ```
 
-The installer may ask for your sudo password and downloads several gigabytes of
-local models. It:
+The installer shows its plan before changing anything. It installs missing
+desktop packages, downloads OpenASR and Ollama from their official installers
+when needed, pulls the two default models, configures autostart, and starts Cap
+to Talk. It may ask for your sudo password for system packages.
 
-- installs the required Ubuntu/Debian packages;
-- installs [OpenASR](https://github.com/QuintinShaw/openasr) and
-  [Ollama](https://ollama.com/) if they are missing;
-- downloads the `qwen3-asr-0.6b` and `qwen3:4b-instruct` models;
-- creates and starts the local OpenASR service;
-- creates the Python environment, example glossaries, and desktop autostart
-  entry; and
-- starts Cap to Talk immediately when run from an X11 desktop.
-
-Existing glossary files are preserved, so the installer is safe to rerun.
-Review `install.sh` first if you prefer not to run automated installers.
-
-Cap to Talk requires **X11** and a working microphone. Native Wayland is not
-supported because the app grabs a global X11 key and inserts text with
-`xdotool`.
+Existing configuration and glossary files are preserved, so rerunning the
+installer is safe. For an unattended install, use `./install.sh --yes`; add
+`--no-start` to wait until the next login before starting the app.
 
 <details>
-<summary>Manual setup or other Linux distributions</summary>
+<summary>What the installer creates</summary>
 
-Install equivalents for these Ubuntu packages:
+| Path | Purpose |
+| --- | --- |
+| `.venv/` | Project-local Python environment |
+| `~/.local/bin/cap-to-talk` | Command symlink |
+| `~/.config/cap-to-talk/` | Configuration and personal glossaries |
+| `~/.config/autostart/cap-to-talk.desktop` | Desktop-session autostart |
+| `~/.config/systemd/user/cap-to-talk-openasr.service` | Namespaced OpenASR service |
+| `~/.local/state/cap-to-talk/` | Runtime logs |
 
-```text
-curl libnotify-bin libportaudio2 python3-tk python3-venv
-x11-xserver-utils xdotool xprintidle
+Shared OpenASR and Ollama installations and downloaded models remain under
+their own management.
+
+</details>
+
+## Use it
+
+| Shortcut | Result |
+| --- | --- |
+| Hold **Caps Lock**, then release | Transcribe, clean up, and insert |
+| Hold **Shift + Caps Lock**, then release | Transcribe and insert without cleanup |
+
+Check the complete local setup at any time:
+
+```bash
+cap-to-talk check
 ```
 
-Install OpenASR using its
-[official instructions](https://github.com/QuintinShaw/openasr#install), then:
+If `~/.local/bin` is not on your shell's `PATH`, run
+`.venv/bin/cap-to-talk check` from the repository instead.
+
+The flow is deliberately simple:
+
+```mermaid
+flowchart LR
+    A[Hold Caps Lock] --> B[Record microphone]
+    B --> C[OpenASR transcript]
+    C --> D[Ollama cleanup]
+    D --> E[Insert in original window]
+    C -->|Shift held or cleanup unavailable| E
+```
+
+## Personal vocabulary
+
+Edit these files with one term per line:
+
+- `~/.config/cap-to-talk/hotwords.txt` contains up to 128 focused recognition
+  hints sent to OpenASR.
+- `~/.config/cap-to-talk/master-hotwords.txt` can hold a larger dictionary. Cap
+  to Talk selects contextually relevant spellings for the cleanup model.
+
+Blank lines and lines beginning with `#` are ignored. Restart Cap to Talk after
+editing either file. The installer migrates existing glossary files from the
+older `~/.config/voice-dictate/` location without deleting the originals.
+
+## Configuration
+
+The installer creates `~/.config/cap-to-talk/config.toml` from
+[`config/config.example.toml`](config/config.example.toml). Every option is
+optional; the shipped file documents all defaults.
+
+```toml
+[audio]
+post_roll_seconds = 0.25
+
+[services]
+asr_url = "http://127.0.0.1:8080/v1/audio/transcriptions"
+rewrite_model = "qwen3:4b-instruct"
+
+[output]
+typing_delay_ms = 0
+
+[privacy]
+debug_transcripts = false
+```
+
+Useful environment overrides include:
+
+| Variable | Purpose |
+| --- | --- |
+| `CAP_TO_TALK_PTT_KEYCODE` | X11 keycode used for push-to-talk |
+| `CAP_TO_TALK_ASR_URL` | OpenASR transcription endpoint |
+| `CAP_TO_TALK_OLLAMA_URL` | Ollama chat endpoint |
+| `CAP_TO_TALK_REWRITE_MODEL` | Ollama cleanup model |
+| `CAP_TO_TALK_TYPING_DELAY_MS` | Delay between synthetic keystrokes |
+
+Run with another configuration file using
+`cap-to-talk --config /path/to/config.toml`. Command-line `--debug` enables
+debug logging, including transcript contents, for that run.
+
+## Privacy
+
+With the default configuration, microphone audio goes only to OpenASR on
+`127.0.0.1`, and transcript text goes only to Ollama on `127.0.0.1`. No cloud
+service or API key is involved.
+
+A WAV file briefly exists in the operating system's temporary directory during
+transcription and is deleted immediately afterward, including on request
+failure. Transcript contents are not logged unless `--debug` or
+`debug_transcripts = true` is enabled. Changing service URLs to remote hosts
+changes these privacy assumptions.
+
+## Troubleshooting
+
+Start with:
+
+```bash
+cap-to-talk check
+```
+
+### Caps Lock does nothing
+
+Confirm `echo "$XDG_SESSION_TYPE"` prints `x11`, then inspect
+`~/.local/state/cap-to-talk/cap-to-talk.log`. Another global shortcut manager
+may already own Caps Lock.
+
+### The microphone is unavailable
+
+```bash
+.venv/bin/python -c 'import sounddevice; print(sounddevice.query_devices())'
+```
+
+Confirm the desktop session has microphone access and a default input device.
+
+### Transcription fails
+
+```bash
+curl -f http://127.0.0.1:8080/health
+systemctl --user status cap-to-talk-openasr.service
+```
+
+### Cleanup fails or raw text is inserted
+
+```bash
+curl -f http://127.0.0.1:11434/api/tags
+ollama list
+```
+
+Cap to Talk intentionally keeps the raw OpenASR result when Ollama cleanup
+fails, rather than losing the dictation.
+
+## Uninstall
+
+```bash
+./uninstall.sh
+```
+
+This removes Cap to Talk's environment, command links, autostart entry, and
+namespaced OpenASR service. Personal configuration and logs are preserved. Use
+`./uninstall.sh --purge` to remove those too. Shared OpenASR/Ollama installs and
+models are never removed automatically.
+
+<details>
+<summary>Manual setup and non-Debian distributions</summary>
+
+Install equivalents for `curl`, `libnotify`, PortAudio, Tk, Python venv,
+`util-linux`, `setxkbmap`, `xkbcomp`, `xdotool`, and `xprintidle`. Install
+OpenASR and Ollama using their official instructions, then prepare the models:
 
 ```bash
 openasr pull qwen3-asr-0.6b:q8
-openasr serve --model qwen3-asr-0.6b --addr 127.0.0.1:8080
-```
-
-In another terminal, install Ollama using its
-[official Linux instructions](https://docs.ollama.com/linux), then:
-
-```bash
 ollama pull qwen3:4b-instruct
 ```
 
-Finally, from the repository directory:
+Start OpenASR on `127.0.0.1:8080`, ensure Ollama is running, and finish the
+user-local setup:
 
 ```bash
 ./scripts/install-user.sh
@@ -83,83 +233,24 @@ Finally, from the repository directory:
 
 </details>
 
-## Usage
-
-| Shortcut | Result |
-| --- | --- |
-| Hold **Caps Lock**, then release | Transcribe, clean up, and insert |
-| Hold **Shift + Caps Lock**, then release | Transcribe and insert without cleanup |
-
-The script disables Caps Lock's normal toggle behavior for the current X11
-session. Stop the process and reset your keyboard layout if you want the
-original Caps Lock behavior back.
-
-## Personal spellings and hotwords
-
-Edit these plain-text files, with one term per line:
-
-- `~/.config/voice-dictate/hotwords.txt` — up to 128 focused terms sent to
-  OpenASR as recognition hints.
-- `~/.config/voice-dictate/master-hotwords.txt` — a larger dictionary. The app
-  fuzzy-matches the raw transcript and sends only the most relevant spellings
-  to the cleanup model.
-
-Blank lines and lines beginning with `#` are ignored. Restart the dictation app
-after changing either file.
-
-## Configuration
-
-The defaults are near the top of `src/cap_to_talk.py`:
-
-| Setting | Default | Purpose |
-| --- | --- | --- |
-| `PTT_KEYCODE` | `66` | Physical X11 Caps Lock keycode |
-| `POST_ROLL_SECONDS` | `0.25` | Captures the end of the last word |
-| `ASR_URL` | `http://127.0.0.1:8080/v1/audio/transcriptions` | OpenASR endpoint |
-| `ASR_MODEL` | `qwen3-asr-0.6b` | Transcription model name |
-| `OLLAMA_URL` | `http://127.0.0.1:11434/api/chat` | Ollama chat endpoint |
-| `REWRITE_MODEL` | `qwen3:4b-instruct` | Transcript cleanup model |
-
-## Troubleshooting
-
-**Nothing happens when Caps Lock is pressed**
-
-- Confirm `echo "$XDG_SESSION_TYPE"` prints `x11`.
-- Check that another application has not grabbed Caps Lock.
-- Run `./scripts/start.sh` in a terminal and inspect the error output.
-
-**Microphone error**
-
-List devices with:
+## Development
 
 ```bash
-.venv/bin/python -c 'import sounddevice; print(sounddevice.query_devices())'
+python3 -m venv .venv
+.venv/bin/pip install -e '.[dev]'
+.venv/bin/ruff check .
+.venv/bin/ruff format --check .
+.venv/bin/pytest
 ```
 
-Then verify that the desktop session has microphone permission and a default
-input device.
+See [CONTRIBUTING.md](CONTRIBUTING.md) before opening a pull request. Please
+report vulnerabilities privately as described in [SECURITY.md](SECURITY.md).
 
-**Transcription fails**
+## Acknowledgments
 
-```bash
-curl -f http://127.0.0.1:8080/health
-systemctl --user status openasr.service
-```
+Cap to Talk builds on [OpenASR](https://github.com/QuintinShaw/openasr),
+[Ollama](https://ollama.com/), and the Qwen speech and language models. Review
+their repositories and model pages for their respective licenses and usage
+terms.
 
-**Cleanup fails or raw text is inserted**
-
-```bash
-curl -f http://127.0.0.1:11434/api/tags
-ollama ls
-```
-
-If Ollama fails, the app deliberately inserts the raw OpenASR transcript rather
-than discarding the dictation.
-
-## Privacy notes
-
-With the default URLs, audio and text are sent only to local loopback services.
-Temporary audio files are deleted after each transcription. Raw and cleaned
-transcripts are printed to the process output for debugging, so consider your
-desktop session logs sensitive. Changing either endpoint to a remote address
-changes these privacy assumptions.
+Released under the [MIT License](LICENSE).

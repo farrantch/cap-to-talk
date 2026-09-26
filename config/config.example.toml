@@ -1,0 +1,33 @@
+# Copy this file to ~/.config/cap-to-talk/config.toml.
+# Every setting is optional; these are the defaults.
+
+[audio]
+rate = 16000
+post_roll_seconds = 0.25
+
+[input]
+# X11 keycode 66 is normally Caps Lock.
+ptt_keycode = 66
+
+[services]
+asr_url = "http://127.0.0.1:8080/v1/audio/transcriptions"
+asr_health_url = "http://127.0.0.1:8080/health"
+asr_model = "qwen3-asr-0.6b"
+ollama_url = "http://127.0.0.1:11434/api/chat"
+ollama_health_url = "http://127.0.0.1:11434/api/tags"
+rewrite_model = "qwen3:4b-instruct"
+
+[glossary]
+hotword_boost = 3.0
+# hotwords_file = "~/.config/cap-to-talk/hotwords.txt"
+# master_hotwords_file = "~/.config/cap-to-talk/master-hotwords.txt"
+
+[output]
+typing_delay_ms = 0
+
+[privacy]
+# Warning: enabling this writes dictated text to logs.
+debug_transcripts = false
+
+[ui]
+status_port = 47653

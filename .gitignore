@@ -3,7 +3,13 @@ __pycache__/
 *.py[cod]
 *.log
 .env
+.coverage
+.pytest_cache/
+.ruff_cache/
+build/
+dist/
+*.egg-info/
 
-# Personal dictionaries are copied to ~/.config/voice-dictate instead.
+# Personal dictionaries are copied to ~/.config/cap-to-talk instead.
 hotwords.txt
 master-hotwords.txt

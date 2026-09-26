@@ -1,5 +1,0 @@
-numpy==2.5.3
-python-xlib==0.33
-RapidFuzz==3.14.6
-requests==2.34.2
-sounddevice==0.5.6

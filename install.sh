@@ -5,6 +5,21 @@ set -euo pipefail
 project_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 asr_model="qwen3-asr-0.6b:q8"
 rewrite_model="qwen3:4b-instruct"
+assume_yes=false
+start_app=true
+install_packages=true
+
+usage() {
+    cat <<'EOF'
+Usage: ./install.sh [options]
+
+Options:
+  -y, --yes                   Skip the confirmation prompt
+      --no-start              Install without starting Cap to Talk
+      --skip-system-packages  Do not use apt-get
+  -h, --help                  Show this help
+EOF
+}
 
 log() {
     printf '\n==> %s\n' "$*"
@@ -18,124 +33,168 @@ fail() {
 wait_for_url() {
     local url="$1"
     local attempts="${2:-30}"
+    local index
 
-    for ((i = 1; i <= attempts; i++)); do
+    for ((index = 1; index <= attempts; index++)); do
         if curl -fsS "${url}" >/dev/null 2>&1; then
             return 0
         fi
         sleep 1
     done
-
     return 1
 }
 
-if [[ "${EUID}" -eq 0 ]]; then
-    fail "Run this installer as your normal desktop user, not as root."
-fi
+run_official_installer() {
+    local name="$1"
+    local url="$2"
+    local installer
+    installer="$(mktemp)"
+    trap 'rm -f -- "${installer:-}"' RETURN
+    curl -fsSL "${url}" -o "${installer}"
+    printf 'Running the %s installer downloaded from %s\n' "${name}" "${url}"
+    sh "${installer}"
+    rm -f -- "${installer}"
+    trap - RETURN
+}
 
-if [[ "$(uname -s)" != "Linux" ]]; then
-    fail "Cap to Talk currently supports Linux/X11 only."
-fi
+while (($#)); do
+    case "$1" in
+        -y|--yes) assume_yes=true ;;
+        --no-start) start_app=false ;;
+        --skip-system-packages) install_packages=false ;;
+        -h|--help) usage; exit 0 ;;
+        *) fail "Unknown option: $1" ;;
+    esac
+    shift
+done
 
+[[ "${EUID}" -ne 0 ]] || fail "Run as your normal desktop user, not root."
+[[ "$(uname -s)" == "Linux" ]] || fail "Linux/X11 is required."
 if [[ "${XDG_SESSION_TYPE:-}" == "wayland" ]]; then
-    fail "This session is Wayland. Log into an X11 session and rerun the installer."
+    fail "Wayland is not supported. Log into an X11 session and rerun."
 fi
 
-if command -v apt-get >/dev/null 2>&1; then
+cat <<'EOF'
+Cap to Talk will:
+  • install missing Ubuntu/Debian desktop packages (with sudo)
+  • install OpenASR and Ollama from their official installers if missing
+  • download roughly 3.5 GB of local models
+  • create a Python virtual environment inside this checkout
+  • add a namespaced OpenASR user service and desktop autostart entry
+
+Existing glossary files are preserved. Shared OpenASR and Ollama installations
+are never removed by Cap to Talk.
+EOF
+
+if [[ "${assume_yes}" != true ]]; then
+    read -r -p "Continue? [y/N] " answer
+    [[ "${answer}" =~ ^[Yy]$ ]] || exit 0
+fi
+
+if [[ "${install_packages}" == true && -x "$(command -v apt-get || true)" ]]; then
     packages=(
         curl
         libnotify-bin
         libportaudio2
         python3-tk
         python3-venv
+        util-linux
+        x11-xkb-utils
         x11-xserver-utils
         xdotool
         xprintidle
     )
     missing_packages=()
-
     for package in "${packages[@]}"; do
         if ! dpkg-query -W -f='${Status}' "${package}" 2>/dev/null \
             | grep -q 'install ok installed'; then
             missing_packages+=("${package}")
         fi
     done
-
     if ((${#missing_packages[@]})); then
-        log "Installing Ubuntu/Debian packages"
+        log "Installing system packages"
+        command -v sudo >/dev/null 2>&1 || fail "sudo is required."
         sudo apt-get update
         sudo apt-get install -y "${missing_packages[@]}"
-    else
-        log "System packages are already installed"
     fi
-else
-    log "Skipping system packages (apt-get was not found)"
-    printf '%s\n' \
-        "Install these equivalents with your package manager:" \
-        "curl, libnotify, PortAudio, Tk, Python venv, xdotool, xprintidle, and X11 utilities."
 fi
 
-command -v curl >/dev/null 2>&1 || fail "curl is required."
+required_commands=(
+    curl
+    flock
+    notify-send
+    python3
+    setxkbmap
+    systemctl
+    xdotool
+    xkbcomp
+    xmodmap
+    xprintidle
+    xset
+)
+for command_name in "${required_commands[@]}"; do
+    command -v "${command_name}" >/dev/null 2>&1 \
+        || fail "Required command not found: ${command_name}"
+done
+python3 -c 'import sys; raise SystemExit(sys.version_info < (3, 12))' \
+    || fail "Python 3.12 or newer is required."
 
 export PATH="${HOME}/.local/bin:${PATH}"
-
 if ! command -v openasr >/dev/null 2>&1; then
     log "Installing OpenASR"
-    curl -fsSL https://dl.openasr.org/install.sh | sh
+    run_official_installer "OpenASR" "https://dl.openasr.org/install.sh"
 fi
-
 openasr_bin="$(command -v openasr || true)"
 [[ -n "${openasr_bin}" ]] || fail "OpenASR was not found after installation."
 
-log "Downloading the OpenASR model (if needed)"
+log "Preparing the OpenASR model"
 "${openasr_bin}" pull "${asr_model}"
 
 systemd_user_dir="${XDG_CONFIG_HOME:-${HOME}/.config}/systemd/user"
 mkdir -p "${systemd_user_dir}"
 escaped_openasr_bin="${openasr_bin//|/\\|}"
 sed "s|@OPENASR_BIN@|${escaped_openasr_bin}|g" \
-    "${project_dir}/systemd/openasr.service.in" \
-    >"${systemd_user_dir}/openasr.service"
-
-log "Starting OpenASR"
+    "${project_dir}/systemd/cap-to-talk-openasr.service.in" \
+    >"${systemd_user_dir}/cap-to-talk-openasr.service"
 systemctl --user daemon-reload
-systemctl --user enable --now openasr.service
+
+if ! wait_for_url http://127.0.0.1:8080/health 2; then
+    log "Starting the Cap to Talk OpenASR service"
+    systemctl --user enable --now cap-to-talk-openasr.service
+fi
 
 if ! command -v ollama >/dev/null 2>&1; then
     log "Installing Ollama"
-    curl -fsSL https://ollama.com/install.sh | sh
+    run_official_installer "Ollama" "https://ollama.com/install.sh"
 fi
 
 if ! wait_for_url http://127.0.0.1:11434/api/tags 2; then
     log "Starting Ollama"
-
     if systemctl list-unit-files ollama.service --no-legend 2>/dev/null \
         | grep -q ollama.service; then
         sudo systemctl enable --now ollama.service
     else
-        nohup ollama serve >/tmp/ollama.log 2>&1 &
+        state_dir="${XDG_STATE_HOME:-${HOME}/.local/state}/cap-to-talk"
+        mkdir -p "${state_dir}"
+        nohup ollama serve >"${state_dir}/ollama.log" 2>&1 &
     fi
 fi
-
 wait_for_url http://127.0.0.1:11434/api/tags 30 \
-    || fail "Ollama did not become ready. Check /tmp/ollama.log or the ollama service."
+    || fail "Ollama did not become ready."
 
-log "Downloading the cleanup model (if needed)"
+log "Preparing the cleanup model"
 ollama pull "${rewrite_model}"
 
 log "Installing Cap to Talk"
 "${project_dir}/scripts/install-user.sh"
 
 wait_for_url http://127.0.0.1:8080/health 60 \
-    || fail "OpenASR did not become ready. Run: systemctl --user status openasr.service"
+    || fail "OpenASR did not become ready. Check its user service."
 
-if [[ "${XDG_SESSION_TYPE:-}" == "x11" && -n "${DISPLAY:-}" ]]; then
-    if ! pgrep -f "${project_dir}/src/cap_to_talk.py" >/dev/null; then
-        nohup "${project_dir}/scripts/start.sh" \
-            >/tmp/cap-to-talk.log 2>&1 &
-    fi
-
-    printf '\nCap to Talk is installed and starting. Hold Caps Lock to try it.\n'
+if [[ "${start_app}" == true && "${XDG_SESSION_TYPE:-}" == "x11" \
+    && -n "${DISPLAY:-}" ]]; then
+    nohup "${project_dir}/scripts/start.sh" >/dev/null 2>&1 &
+    printf '\nInstalled. Cap to Talk is starting; hold Caps Lock to try it.\n'
 else
-    printf '\nCap to Talk is installed. Log into an X11 session to use it.\n'
+    printf '\nInstalled. It will start automatically in your next X11 session.\n'
 fi

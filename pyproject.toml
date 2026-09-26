@@ -1,0 +1,61 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "cap-to-talk"
+version = "0.1.0"
+description = "Local Caps Lock push-to-talk dictation for Linux/X11"
+readme = "README.md"
+requires-python = ">=3.12"
+license = "MIT"
+authors = [{ name = "Chase Farrant" }]
+keywords = ["dictation", "speech-to-text", "openasr", "ollama", "x11"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Environment :: X11 Applications",
+    "Operating System :: POSIX :: Linux",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Multimedia :: Sound/Audio :: Speech",
+]
+dependencies = [
+    "numpy>=2.0,<3",
+    "python-xlib>=0.33,<1",
+    "RapidFuzz>=3.9,<4",
+    "requests>=2.32,<3",
+    "sounddevice>=0.5,<1",
+]
+
+[project.optional-dependencies]
+dev = [
+    "build>=1.2,<2",
+    "pip-audit>=2.9,<3",
+    "pytest>=8.3,<10",
+    "ruff>=0.12,<1",
+]
+
+[project.urls]
+Homepage = "https://github.com/farrantch/cap-to-talk"
+Issues = "https://github.com/farrantch/cap-to-talk/issues"
+
+[project.scripts]
+cap-to-talk = "cap_to_talk.cli:main"
+cap-to-talk-status = "cap_to_talk.status_ui:main"
+
+[tool.setuptools]
+package-dir = { "" = "src" }
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+addopts = "-q"
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 88
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]

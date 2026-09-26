@@ -1,0 +1,55 @@
+name: Bug report
+description: Report a reproducible problem with Cap to Talk
+title: "[Bug]: "
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting a bug. Do not include recordings, transcripts, private glossary entries, or credentials.
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: Run `cap-to-talk --version`.
+      placeholder: 0.1.0
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: Environment
+      description: Distribution, desktop environment, Python version, and X11 confirmation.
+      placeholder: Ubuntu 24.04, GNOME on X11, Python 3.12
+    validations:
+      required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: What happened?
+      description: Describe the problem and what you expected instead.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Reproduction steps
+      placeholder: |
+        1. Start Cap to Talk
+        2. Hold Caps Lock
+        3. ...
+    validations:
+      required: true
+  - type: textarea
+    id: diagnostics
+    attributes:
+      label: Diagnostics
+      description: Paste non-sensitive `cap-to-talk check` output and relevant errors.
+      render: shell
+  - type: checkboxes
+    id: privacy
+    attributes:
+      label: Privacy check
+      options:
+        - label: I removed recordings, transcripts, private glossary entries, credentials, and other sensitive data.
+          required: true
