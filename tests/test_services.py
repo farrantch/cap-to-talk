@@ -3,8 +3,8 @@ from typing import Any
 
 import numpy as np
 
-from cap_to_talk.config import Settings
-from cap_to_talk.services import LocalServices
+from caps_talk.config import Settings
+from caps_talk.services import LocalServices
 
 
 class FakeResponse:

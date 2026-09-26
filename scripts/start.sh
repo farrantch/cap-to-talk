@@ -4,12 +4,13 @@ set -euo pipefail
 
 project_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
 python_env="${project_dir}/.venv"
-app_bin="${python_env}/bin/cap-to-talk"
-status_bin="${python_env}/bin/cap-to-talk-status"
-state_dir="${XDG_STATE_HOME:-${HOME}/.local/state}/cap-to-talk"
+app_bin="${python_env}/bin/caps-talk"
+status_bin="${python_env}/bin/caps-talk-status"
+state_dir="${XDG_STATE_HOME:-${HOME}/.local/state}/caps-talk"
 runtime_dir="${XDG_RUNTIME_DIR:-/tmp}"
-lock_file="${runtime_dir}/cap-to-talk-${UID}.lock"
-pid_file="${runtime_dir}/cap-to-talk-${UID}.pid"
+lock_file="${runtime_dir}/caps-talk-${UID}.lock"
+legacy_lock_file="${runtime_dir}/cap-to-talk-${UID}.lock"
+pid_file="${runtime_dir}/caps-talk-${UID}.pid"
 keyboard_state=""
 app_pid=""
 status_pid=""
@@ -19,7 +20,12 @@ mkdir -p "${state_dir}"
 
 exec 9>"${lock_file}"
 if ! flock -n 9; then
-    echo "Cap To Talk is already running." >&2
+    echo "Caps Talk is already running." >&2
+    exit 0
+fi
+exec 8>"${legacy_lock_file}"
+if ! flock -n 8; then
+    echo "Caps Talk is already running." >&2
     exit 0
 fi
 printf '%s\n' "$$" >"${pid_file}"
@@ -29,7 +35,7 @@ printf '%s\n' "$$" >"${pid_file}"
     exit 1
 }
 [[ "${XDG_SESSION_TYPE:-}" == "x11" ]] || {
-    echo "Cap To Talk requires an X11 desktop session." >&2
+    echo "Caps Talk requires an X11 desktop session." >&2
     exit 1
 }
 [[ -n "${DISPLAY:-}" ]] || {
@@ -71,7 +77,7 @@ trap 'exit 130' INT
 trap 'exit 143' TERM
 
 runtime_settings_output="$("${python_env}/bin/python" -c '
-from cap_to_talk.config import load_settings
+from caps_talk.config import load_settings
 settings = load_settings()
 print(settings.asr_health_url)
 print(settings.ollama_health_url)
@@ -91,7 +97,7 @@ if ! wait_for_url "${ollama_health_url}" 2; then
     echo "Ollama is not ready; cleanup will fall back to raw transcripts." >&2
 fi
 
-keyboard_state="$(mktemp "${runtime_dir}/cap-to-talk-keyboard.XXXXXX.xkb")"
+keyboard_state="$(mktemp "${runtime_dir}/caps-talk-keyboard.XXXXXX.xkb")"
 xkbcomp -xkb "${DISPLAY}" "${keyboard_state}" >/dev/null 2>&1
 setxkbmap -option caps:none
 xmodmap -e 'clear Lock'
@@ -100,7 +106,7 @@ xset -r "${ptt_keycode}"
 
 "${status_bin}" >>"${state_dir}/status.log" 2>&1 &
 status_pid="$!"
-"${app_bin}" run >>"${state_dir}/cap-to-talk.log" 2>&1 &
+"${app_bin}" run >>"${state_dir}/caps-talk.log" 2>&1 &
 app_pid="$!"
 
 set +e

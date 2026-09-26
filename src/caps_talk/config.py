@@ -1,4 +1,4 @@
-"""Configuration loading for Cap To Talk."""
+"""Configuration loading for Caps Talk."""
 
 from __future__ import annotations
 
@@ -12,8 +12,8 @@ from typing import Any
 def default_config_dir() -> Path:
     root = os.environ.get("XDG_CONFIG_HOME")
     if root:
-        return Path(root).expanduser() / "cap-to-talk"
-    return Path.home() / ".config" / "cap-to-talk"
+        return Path(root).expanduser() / "caps-talk"
+    return Path.home() / ".config" / "caps-talk"
 
 
 @dataclass(frozen=True, slots=True)
@@ -67,19 +67,25 @@ _TOML_FIELDS: dict[tuple[str, str], str] = {
     ("ui", "status_port"): "status_port",
 }
 
+_ENV_FIELD_SPECS: dict[str, tuple[str, type]] = {
+    "RATE": ("rate", int),
+    "PTT_KEYCODE": ("ptt_keycode", int),
+    "POST_ROLL_SECONDS": ("post_roll_seconds", float),
+    "ASR_URL": ("asr_url", str),
+    "ASR_HEALTH_URL": ("asr_health_url", str),
+    "ASR_MODEL": ("asr_model", str),
+    "OLLAMA_URL": ("ollama_url", str),
+    "OLLAMA_HEALTH_URL": ("ollama_health_url", str),
+    "REWRITE_MODEL": ("rewrite_model", str),
+    "HOTWORD_BOOST": ("hotword_boost", float),
+    "TYPING_DELAY_MS": ("typing_delay_ms", int),
+    "STATUS_PORT": ("status_port", int),
+}
+
+# Read legacy variables first so the new CAPS_TALK_* names win when both exist.
 _ENV_FIELDS: dict[str, tuple[str, type]] = {
-    "CAP_TO_TALK_RATE": ("rate", int),
-    "CAP_TO_TALK_PTT_KEYCODE": ("ptt_keycode", int),
-    "CAP_TO_TALK_POST_ROLL_SECONDS": ("post_roll_seconds", float),
-    "CAP_TO_TALK_ASR_URL": ("asr_url", str),
-    "CAP_TO_TALK_ASR_HEALTH_URL": ("asr_health_url", str),
-    "CAP_TO_TALK_ASR_MODEL": ("asr_model", str),
-    "CAP_TO_TALK_OLLAMA_URL": ("ollama_url", str),
-    "CAP_TO_TALK_OLLAMA_HEALTH_URL": ("ollama_health_url", str),
-    "CAP_TO_TALK_REWRITE_MODEL": ("rewrite_model", str),
-    "CAP_TO_TALK_HOTWORD_BOOST": ("hotword_boost", float),
-    "CAP_TO_TALK_TYPING_DELAY_MS": ("typing_delay_ms", int),
-    "CAP_TO_TALK_STATUS_PORT": ("status_port", int),
+    **{f"CAP_TO_TALK_{suffix}": spec for suffix, spec in _ENV_FIELD_SPECS.items()},
+    **{f"CAPS_TALK_{suffix}": spec for suffix, spec in _ENV_FIELD_SPECS.items()},
 }
 
 

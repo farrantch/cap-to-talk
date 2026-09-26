@@ -4,12 +4,15 @@ set -euo pipefail
 
 project_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 config_root="${XDG_CONFIG_HOME:-${HOME}/.config}"
-config_dir="${config_root}/cap-to-talk"
-autostart_file="${config_root}/autostart/cap-to-talk.desktop"
-service_file="${config_root}/systemd/user/cap-to-talk-openasr.service"
-state_dir="${XDG_STATE_HOME:-${HOME}/.local/state}/cap-to-talk"
+config_dir="${config_root}/caps-talk"
+legacy_config_dir="${config_root}/cap-to-talk"
+autostart_file="${config_root}/autostart/caps-talk.desktop"
+legacy_autostart_file="${config_root}/autostart/cap-to-talk.desktop"
+service_file="${config_root}/systemd/user/caps-talk-openasr.service"
+legacy_service_file="${config_root}/systemd/user/cap-to-talk-openasr.service"
+state_dir="${XDG_STATE_HOME:-${HOME}/.local/state}/caps-talk"
+legacy_state_dir="${XDG_STATE_HOME:-${HOME}/.local/state}/cap-to-talk"
 runtime_dir="${XDG_RUNTIME_DIR:-/tmp}"
-pid_file="${runtime_dir}/cap-to-talk-${UID}.pid"
 bin_dir="${HOME}/.local/bin"
 purge=false
 assume_yes=false
@@ -33,20 +36,28 @@ if [[ "${purge}" == true && "${assume_yes}" != true ]]; then
     [[ "${answer}" =~ ^[Yy]$ ]] || purge=false
 fi
 
-if [[ -f "${pid_file}" ]]; then
-    pid="$(<"${pid_file}")"
-    if [[ "${pid}" =~ ^[0-9]+$ ]] \
-        && [[ -r "/proc/${pid}/cmdline" ]] \
-        && tr '\0' ' ' <"/proc/${pid}/cmdline" | grep -Fq "${project_dir}"; then
-        kill "${pid}" 2>/dev/null || true
+pid_files=(
+    "${runtime_dir}/caps-talk-${UID}.pid"
+    "${runtime_dir}/cap-to-talk-${UID}.pid"
+)
+for pid_file in "${pid_files[@]}"; do
+    if [[ -f "${pid_file}" ]]; then
+        pid="$(<"${pid_file}")"
+        if [[ "${pid}" =~ ^[0-9]+$ ]] \
+            && [[ -r "/proc/${pid}/cmdline" ]] \
+            && tr '\0' ' ' <"/proc/${pid}/cmdline" | grep -Fq "${project_dir}"; then
+            kill "${pid}" 2>/dev/null || true
+        fi
     fi
-fi
+done
 
+systemctl --user disable --now caps-talk-openasr.service 2>/dev/null || true
 systemctl --user disable --now cap-to-talk-openasr.service 2>/dev/null || true
-rm -f -- "${autostart_file}" "${service_file}" "${pid_file}"
+rm -f -- "${autostart_file}" "${legacy_autostart_file}" \
+    "${service_file}" "${legacy_service_file}" "${pid_files[@]}"
 systemctl --user daemon-reload 2>/dev/null || true
 
-for command_name in cap-to-talk cap-to-talk-status; do
+for command_name in caps-talk caps-talk-status cap-to-talk cap-to-talk-status; do
     command_link="${bin_dir}/${command_name}"
     expected_target="${project_dir}/.venv/bin/${command_name}"
     if [[ -L "${command_link}" \
@@ -61,8 +72,10 @@ if [[ -d "${venv_dir}" && "${venv_dir}" == "${project_dir}/.venv" ]]; then
 fi
 
 if [[ "${purge}" == true ]]; then
-    [[ "${config_dir}" == */cap-to-talk ]] && rm -rf -- "${config_dir}"
-    [[ "${state_dir}" == */cap-to-talk ]] && rm -rf -- "${state_dir}"
+    [[ "${config_dir}" == */caps-talk ]] && rm -rf -- "${config_dir}"
+    [[ "${legacy_config_dir}" == */cap-to-talk ]] && rm -rf -- "${legacy_config_dir}"
+    [[ "${state_dir}" == */caps-talk ]] && rm -rf -- "${state_dir}"
+    [[ "${legacy_state_dir}" == */cap-to-talk ]] && rm -rf -- "${legacy_state_dir}"
 fi
 
-echo "Cap To Talk was uninstalled. Shared OpenASR/Ollama files were preserved."
+echo "Caps Talk was uninstalled. Shared OpenASR/Ollama files were preserved."

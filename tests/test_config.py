@@ -2,7 +2,7 @@ from pathlib import Path
 
 import pytest
 
-from cap_to_talk.config import load_settings
+from caps_talk.config import load_settings
 
 
 def test_loads_toml_and_environment_override(
@@ -10,7 +10,7 @@ def test_loads_toml_and_environment_override(
     monkeypatch: pytest.MonkeyPatch,
 ):
     config_root = tmp_path / "config"
-    config_dir = config_root / "cap-to-talk"
+    config_dir = config_root / "caps-talk"
     config_dir.mkdir(parents=True)
     (config_dir / "config.toml").write_text(
         """
@@ -26,7 +26,7 @@ debug_transcripts = true
         encoding="utf-8",
     )
     monkeypatch.setenv("XDG_CONFIG_HOME", str(config_root))
-    monkeypatch.setenv("CAP_TO_TALK_REWRITE_MODEL", "environment-model")
+    monkeypatch.setenv("CAPS_TALK_REWRITE_MODEL", "environment-model")
 
     settings = load_settings()
 
@@ -34,6 +34,21 @@ debug_transcripts = true
     assert settings.rewrite_model == "environment-model"
     assert settings.debug_transcripts is True
     assert settings.hotwords_file == config_dir / "hotwords.txt"
+
+
+def test_supports_legacy_environment_names_with_new_names_taking_priority(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+):
+    config_path = tmp_path / "config.toml"
+    config_path.write_text("", encoding="utf-8")
+    monkeypatch.setenv("CAP_TO_TALK_REWRITE_MODEL", "legacy-model")
+
+    assert load_settings(config_path).rewrite_model == "legacy-model"
+
+    monkeypatch.setenv("CAPS_TALK_REWRITE_MODEL", "caps-model")
+
+    assert load_settings(config_path).rewrite_model == "caps-model"
 
 
 def test_explicit_config_uses_its_directory_for_glossaries(tmp_path: Path):

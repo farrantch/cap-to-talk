@@ -11,11 +11,11 @@ import numpy as np
 import sounddevice as sd
 from Xlib import X, display
 
-from cap_to_talk.config import Settings
-from cap_to_talk.glossary import load_terms
-from cap_to_talk.services import LocalServices
-from cap_to_talk.status import notify, send_status
-from cap_to_talk.x11 import get_active_window_id, type_text
+from caps_talk.config import Settings
+from caps_talk.glossary import load_terms
+from caps_talk.services import LocalServices
+from caps_talk.status import notify, send_status
+from caps_talk.x11 import get_active_window_id, type_text
 
 LOGGER = logging.getLogger(__name__)
 
@@ -197,8 +197,8 @@ class VoiceDictationApp:
             X.GrabModeAsync,
         )
         x_display.sync()
-        LOGGER.info("Cap To Talk ready")
-        notify(self.settings, "Cap To Talk ready", 1_200)
+        LOGGER.info("Caps Talk ready")
+        notify(self.settings, "Caps Talk ready", 1_200)
 
         try:
             while True:
