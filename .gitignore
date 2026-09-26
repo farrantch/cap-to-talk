@@ -10,6 +10,6 @@ build/
 dist/
 *.egg-info/
 
-# Personal dictionaries are copied to ~/.config/cap-to-talk instead.
+# Personal dictionaries are copied to ~/.config/caps-talk instead.
 hotwords.txt
 master-hotwords.txt

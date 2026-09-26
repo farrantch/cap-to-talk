@@ -15,7 +15,7 @@ Usage: ./install.sh [options]
 
 Options:
   -y, --yes                   Skip the confirmation prompt
-      --no-start              Install without starting Cap To Talk
+      --no-start              Install without starting Caps Talk
       --skip-system-packages  Do not use apt-get
   -h, --help                  Show this help
 EOF
@@ -75,7 +75,7 @@ if [[ "${XDG_SESSION_TYPE:-}" == "wayland" ]]; then
 fi
 
 cat <<'EOF'
-Cap To Talk will:
+Caps Talk will:
   • install missing Ubuntu/Debian desktop packages (with sudo)
   • install OpenASR and Ollama from their official installers if missing
   • download roughly 3.5 GB of local models
@@ -83,7 +83,7 @@ Cap To Talk will:
   • add a namespaced OpenASR user service and desktop autostart entry
 
 Existing glossary files are preserved. Shared OpenASR and Ollama installations
-are never removed by Cap To Talk.
+are never removed by Caps Talk.
 EOF
 
 if [[ "${assume_yes}" != true ]]; then
@@ -152,15 +152,21 @@ log "Preparing the OpenASR model"
 
 systemd_user_dir="${XDG_CONFIG_HOME:-${HOME}/.config}/systemd/user"
 mkdir -p "${systemd_user_dir}"
+legacy_service_file="${systemd_user_dir}/cap-to-talk-openasr.service"
+if [[ -f "${legacy_service_file}" ]]; then
+    systemctl --user disable --now cap-to-talk-openasr.service \
+        2>/dev/null || true
+    rm -f -- "${legacy_service_file}"
+fi
 escaped_openasr_bin="${openasr_bin//|/\\|}"
 sed "s|@OPENASR_BIN@|${escaped_openasr_bin}|g" \
-    "${project_dir}/systemd/cap-to-talk-openasr.service.in" \
-    >"${systemd_user_dir}/cap-to-talk-openasr.service"
+    "${project_dir}/systemd/caps-talk-openasr.service.in" \
+    >"${systemd_user_dir}/caps-talk-openasr.service"
 systemctl --user daemon-reload
 
 if ! wait_for_url http://127.0.0.1:8080/health 2; then
-    log "Starting the Cap To Talk OpenASR service"
-    systemctl --user enable --now cap-to-talk-openasr.service
+    log "Starting the Caps Talk OpenASR service"
+    systemctl --user enable --now caps-talk-openasr.service
 fi
 
 if ! command -v ollama >/dev/null 2>&1; then
@@ -174,7 +180,7 @@ if ! wait_for_url http://127.0.0.1:11434/api/tags 2; then
         | grep -q ollama.service; then
         sudo systemctl enable --now ollama.service
     else
-        state_dir="${XDG_STATE_HOME:-${HOME}/.local/state}/cap-to-talk"
+        state_dir="${XDG_STATE_HOME:-${HOME}/.local/state}/caps-talk"
         mkdir -p "${state_dir}"
         nohup ollama serve >"${state_dir}/ollama.log" 2>&1 &
     fi
@@ -185,7 +191,7 @@ wait_for_url http://127.0.0.1:11434/api/tags 30 \
 log "Preparing the cleanup model"
 ollama pull "${rewrite_model}"
 
-log "Installing Cap To Talk"
+log "Installing Caps Talk"
 "${project_dir}/scripts/install-user.sh"
 
 wait_for_url http://127.0.0.1:8080/health 60 \
@@ -194,7 +200,7 @@ wait_for_url http://127.0.0.1:8080/health 60 \
 if [[ "${start_app}" == true && "${XDG_SESSION_TYPE:-}" == "x11" \
     && -n "${DISPLAY:-}" ]]; then
     nohup "${project_dir}/scripts/start.sh" >/dev/null 2>&1 &
-    printf '\nInstalled. Cap To Talk is starting; hold Caps Lock to try it.\n'
+    printf '\nInstalled. Caps Talk is starting; hold Caps Lock to try it.\n'
 else
     printf '\nInstalled. It will start automatically in your next X11 session.\n'
 fi

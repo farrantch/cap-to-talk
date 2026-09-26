@@ -1,6 +1,6 @@
 import json
 
-from cap_to_talk import cli
+from caps_talk import cli
 
 
 def test_check_json_success(monkeypatch, capsys):

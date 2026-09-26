@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from cap_to_talk.glossary import (
+from caps_talk.glossary import (
     glossary_normalize,
     load_terms,
     select_relevant_terms,

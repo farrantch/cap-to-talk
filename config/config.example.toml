@@ -1,4 +1,4 @@
-# Copy this file to ~/.config/cap-to-talk/config.toml.
+# Copy this file to ~/.config/caps-talk/config.toml.
 # Every setting is optional; these are the defaults.
 
 [audio]
@@ -19,8 +19,8 @@ rewrite_model = "qwen3:4b-instruct"
 
 [glossary]
 hotword_boost = 3.0
-# hotwords_file = "~/.config/cap-to-talk/hotwords.txt"
-# master_hotwords_file = "~/.config/cap-to-talk/master-hotwords.txt"
+# hotwords_file = "~/.config/caps-talk/hotwords.txt"
+# master_hotwords_file = "~/.config/caps-talk/master-hotwords.txt"
 
 [output]
 typing_delay_ms = 0
