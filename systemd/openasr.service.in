@@ -1,0 +1,10 @@
+[Unit]
+Description=Local OpenASR transcription server
+
+[Service]
+ExecStart=@OPENASR_BIN@ serve --model qwen3-asr-0.6b --addr 127.0.0.1:8080
+Restart=on-failure
+RestartSec=2
+
+[Install]
+WantedBy=default.target

@@ -1,0 +1,10 @@
+# A larger spelling dictionary used while cleaning up transcripts.
+# Only terms that fuzzy-match the current transcript are added to the prompt.
+OpenASR
+Ollama
+Qwen3 ASR
+GitHub
+Python
+RapidFuzz
+xdotool
+X11

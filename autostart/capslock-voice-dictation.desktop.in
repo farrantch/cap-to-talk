@@ -1,0 +1,7 @@
+[Desktop Entry]
+Type=Application
+Name=Caps Lock Voice Dictation
+Comment=Hold Caps Lock to dictate into the active X11 window
+Exec=@PROJECT_DIR@/scripts/start.sh
+Terminal=false
+X-GNOME-Autostart-enabled=true

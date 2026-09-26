@@ -1,0 +1,9 @@
+.venv/
+__pycache__/
+*.py[cod]
+*.log
+.env
+
+# Personal dictionaries are copied to ~/.config/voice-dictate instead.
+hotwords.txt
+master-hotwords.txt

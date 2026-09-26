@@ -1,0 +1,7 @@
+# One spelling per line. These terms are sent to OpenASR as recognition hints.
+OpenASR
+Ollama
+Qwen
+GitHub
+Python
+RapidFuzz
