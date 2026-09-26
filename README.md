@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="docs/assets/icon.png" alt="Cap to Talk icon" width="144">
+  <img src="docs/assets/icon-wide.png" alt="Cap to Talk logo" width="360">
   <h1>Cap to Talk</h1>
   <p><strong>Hold Caps Lock. Speak. Release. Keep typing.</strong></p>
   <p>Private-by-default push-to-talk dictation for Linux/X11, powered by local AI.</p>
