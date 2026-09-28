@@ -10,7 +10,7 @@ def prepare_installer(tmp_path: Path) -> tuple[Path, dict[str, str]]:
     project_dir = tmp_path / "project"
     for relative_path in (
         "scripts/install-user.sh",
-        "autostart/caps-talk.desktop.in",
+        "autostart/cap-to-talk.desktop.in",
         "config/config.example.toml",
         "config/hotwords.example.txt",
         "config/master-hotwords.example.txt",
@@ -58,8 +58,8 @@ def run_installer(project_dir: Path, env: dict[str, str], *args: str) -> None:
 
 def test_on_demand_install_is_default_and_idempotent(tmp_path: Path) -> None:
     project_dir, env = prepare_installer(tmp_path)
-    autostart_file = Path(env["XDG_CONFIG_HOME"]) / "autostart/caps-talk.desktop"
-    config_file = Path(env["XDG_CONFIG_HOME"]) / "caps-talk/config.toml"
+    autostart_file = Path(env["XDG_CONFIG_HOME"]) / "autostart/cap-to-talk.desktop"
+    config_file = Path(env["XDG_CONFIG_HOME"]) / "cap-to-talk/config.toml"
 
     run_installer(project_dir, env)
     config_file.write_text("# personalized\n")
@@ -71,7 +71,7 @@ def test_on_demand_install_is_default_and_idempotent(tmp_path: Path) -> None:
 
 def test_autostart_install_is_idempotent(tmp_path: Path) -> None:
     project_dir, env = prepare_installer(tmp_path)
-    autostart_file = Path(env["XDG_CONFIG_HOME"]) / "autostart/caps-talk.desktop"
+    autostart_file = Path(env["XDG_CONFIG_HOME"]) / "autostart/cap-to-talk.desktop"
 
     run_installer(project_dir, env, "--autostart")
     expected_contents = autostart_file.read_text()
@@ -83,7 +83,7 @@ def test_autostart_install_is_idempotent(tmp_path: Path) -> None:
 
 def test_default_install_disables_managed_autostart(tmp_path: Path) -> None:
     project_dir, env = prepare_installer(tmp_path)
-    autostart_file = Path(env["XDG_CONFIG_HOME"]) / "autostart/caps-talk.desktop"
+    autostart_file = Path(env["XDG_CONFIG_HOME"]) / "autostart/cap-to-talk.desktop"
 
     run_installer(project_dir, env, "--autostart")
     run_installer(project_dir, env)
@@ -93,10 +93,37 @@ def test_default_install_disables_managed_autostart(tmp_path: Path) -> None:
 
 def test_default_install_preserves_unmanaged_autostart(tmp_path: Path) -> None:
     project_dir, env = prepare_installer(tmp_path)
-    autostart_file = Path(env["XDG_CONFIG_HOME"]) / "autostart/caps-talk.desktop"
+    autostart_file = Path(env["XDG_CONFIG_HOME"]) / "autostart/cap-to-talk.desktop"
     autostart_file.parent.mkdir(parents=True)
-    autostart_file.write_text("[Desktop Entry]\nExec=/another/caps-talk\n")
+    autostart_file.write_text("[Desktop Entry]\nExec=/another/cap-to-talk\n")
 
     run_installer(project_dir, env)
 
-    assert autostart_file.read_text() == ("[Desktop Entry]\nExec=/another/caps-talk\n")
+    assert autostart_file.read_text() == (
+        "[Desktop Entry]\nExec=/another/cap-to-talk\n"
+    )
+
+
+def test_migrates_caps_talk_installation(tmp_path: Path) -> None:
+    project_dir, env = prepare_installer(tmp_path)
+    config_root = Path(env["XDG_CONFIG_HOME"])
+    legacy_config_file = config_root / "caps-talk/config.toml"
+    legacy_config_file.parent.mkdir(parents=True)
+    legacy_config_file.write_text("# migrated\n")
+
+    legacy_autostart_file = config_root / "autostart/caps-talk.desktop"
+    legacy_autostart_file.parent.mkdir(parents=True)
+    legacy_autostart_file.write_text(
+        "[Desktop Entry]\nName=Caps Talk\nExec=/old/checkout/scripts/start.sh\n"
+    )
+
+    legacy_command = Path(env["HOME"]) / ".local/bin/caps-talk"
+    legacy_command.parent.mkdir(parents=True)
+    legacy_command.symlink_to(tmp_path / "old-checkout/.venv/bin/caps-talk")
+
+    run_installer(project_dir, env)
+
+    config_file = config_root / "cap-to-talk/config.toml"
+    assert config_file.read_text() == "# migrated\n"
+    assert not legacy_autostart_file.exists()
+    assert not legacy_command.is_symlink()

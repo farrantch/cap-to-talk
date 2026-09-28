@@ -1,4 +1,4 @@
-from caps_talk.text import normalize_for_typing, strip_wrapping_quotes
+from cap_to_talk.text import normalize_for_typing, strip_wrapping_quotes
 
 
 def test_normalizes_typography_and_preserves_paragraphs():

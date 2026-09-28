@@ -1,14 +1,16 @@
 # Changelog
 
-All notable changes to Caps Talk are documented here. This project follows
+All notable changes to Cap To Talk are documented here. This project follows
 [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
 ### Changed
 
+- Restored the project name, package, commands, paths, and brand assets to
+  Cap To Talk while preserving automatic migration from Caps Talk installations.
 - Made on-demand installation the default and added an explicit `--autostart`
-  installer flag for starting Caps Talk at desktop login.
+  installer flag for starting Cap To Talk at desktop login.
 - Expanded the example hotword and master glossary files with the complete
   technical vocabulary set.
 

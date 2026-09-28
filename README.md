@@ -1,6 +1,6 @@
 <div align="center">
-  <img src="docs/assets/icon-wide.png" alt="Caps Talk logo" width="360">
-  <h1>Caps Talk</h1>
+  <img src="docs/assets/icon-wide.png" alt="Cap To Talk logo" width="360">
+  <h1>Cap To Talk</h1>
   <p><strong>Push-to-talk dictation for Linux/X11, powered by local AI.<strong></p>
 
   [![CI](https://github.com/farrantch/cap-to-talk/actions/workflows/ci.yml/badge.svg)](https://github.com/farrantch/cap-to-talk/actions/workflows/ci.yml)
@@ -9,9 +9,9 @@
   ![Platform: Linux/X11](https://img.shields.io/badge/platform-Linux%2FX11-ff6b5f.svg)
 </div>
 
-![Caps Talk recording, transcription, cleanup, and insertion demo](docs/assets/demo.gif)
+![Cap To Talk recording, transcription, cleanup, and insertion demo](docs/assets/demo.gif)
 
-Caps Talk turns Caps Lock into a system-wide dictation key. It records while
+Cap To Talk turns Caps Lock into a system-wide dictation key. It records while
 the key is held, transcribes with [OpenASR](https://github.com/QuintinShaw/openasr),
 optionally cleans up the wording with [Ollama](https://ollama.com/), and inserts
 the result into the window where you started speaking. The default setup runs
@@ -24,7 +24,7 @@ entirely on your machine and needs no cloud API key.
 - Python 3.12 or newer and a working microphone
 - About 3.5 GB for the default local models; 8 GB RAM is recommended
 
-Caps Talk temporarily remaps Caps Lock while it runs and restores the prior
+Cap To Talk temporarily remaps Caps Lock while it runs and restores the prior
 keyboard layout when it exits normally.
 
 ## Install
@@ -40,7 +40,7 @@ cd cap-to-talk
 ./install.sh
 ```
 
-Caps Talk starts after installation. After a later login, start it from the
+Cap To Talk starts after installation. After a later login, start it from the
 checkout with `./scripts/start.sh`.
 
 ### Start at login
@@ -49,10 +49,10 @@ checkout with `./scripts/start.sh`.
 ./install.sh --autostart
 ```
 
-Caps Talk starts after installation and automatically at future desktop logins.
+Cap To Talk starts after installation and automatically at future desktop logins.
 
 Both methods install the required packages and local models while preserving
-existing settings. Add `--no-start` to leave Caps Talk stopped after installation
+existing settings. Add `--no-start` to leave Cap To Talk stopped after installation
 or `--yes` for an unattended install; flags can be combined.
 
 ## Use it
@@ -65,24 +65,24 @@ or `--yes` for an unattended install; flags can be combined.
 Check the setup at any time:
 
 ```bash
-caps-talk check
+cap-to-talk check
 ```
 
 ## Personal vocabulary
 
 Edit these files with one term per line:
 
-- `~/.config/caps-talk/hotwords.txt` contains up to 128 focused recognition
+- `~/.config/cap-to-talk/hotwords.txt` contains up to 128 focused recognition
   hints sent to OpenASR.
-- `~/.config/caps-talk/master-hotwords.txt` can hold a larger dictionary.
-  Caps Talk selects contextually relevant spellings for the cleanup model.
+- `~/.config/cap-to-talk/master-hotwords.txt` can hold a larger dictionary.
+  Cap To Talk selects contextually relevant spellings for the cleanup model.
 
-Blank lines and lines beginning with `#` are ignored. Restart Caps Talk after
+Blank lines and lines beginning with `#` are ignored. Restart Cap To Talk after
 editing either file.
 
 ## Configuration
 
-Edit `~/.config/caps-talk/config.toml` to change audio, service, output, or
+Edit `~/.config/cap-to-talk/config.toml` to change audio, service, output, or
 privacy settings. All available options and defaults are documented in
 [`config/config.example.toml`](config/config.example.toml).
 
@@ -98,13 +98,13 @@ is enabled.
 Start with:
 
 ```bash
-caps-talk check
+cap-to-talk check
 ```
 
 ### Caps Lock does nothing
 
 Confirm `echo "$XDG_SESSION_TYPE"` prints `x11`, then inspect
-`~/.local/state/caps-talk/caps-talk.log`. Another global shortcut manager
+`~/.local/state/cap-to-talk/cap-to-talk.log`. Another global shortcut manager
 may already own Caps Lock.
 
 ### The microphone is unavailable
@@ -119,7 +119,7 @@ Confirm the desktop session has microphone access and a default input device.
 
 ```bash
 curl -f http://127.0.0.1:8080/health
-systemctl --user status caps-talk-openasr.service
+systemctl --user status cap-to-talk-openasr.service
 ```
 
 ### Cleanup fails or raw text is inserted
@@ -129,7 +129,7 @@ curl -f http://127.0.0.1:11434/api/tags
 ollama list
 ```
 
-Caps Talk uses the raw transcript when cleanup is unavailable.
+Cap To Talk uses the raw transcript when cleanup is unavailable.
 
 </details>
 
@@ -162,7 +162,7 @@ user-local setup:
 ./scripts/start.sh
 ```
 
-Pass `--autostart` to `install-user.sh` if Caps Talk should start automatically
+Pass `--autostart` to `install-user.sh` if Cap To Talk should start automatically
 at desktop login. Without that flag, the setup is idempotently configured for
 on-demand use.
 
@@ -175,7 +175,7 @@ issues privately as described in [SECURITY.md](SECURITY.md).
 
 ## Acknowledgments
 
-Caps Talk builds on [OpenASR](https://github.com/QuintinShaw/openasr),
+Cap To Talk builds on [OpenASR](https://github.com/QuintinShaw/openasr),
 [Ollama](https://ollama.com/), and the Qwen speech and language models. Review
 their repositories and model pages for their respective licenses and usage
 terms.

@@ -3,7 +3,7 @@ requires = ["setuptools>=77"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "caps-talk"
+name = "cap-to-talk"
 version = "0.2.0"
 description = "Local Caps Lock push-to-talk dictation for Linux/X11"
 readme = "README.md"
@@ -40,10 +40,8 @@ Homepage = "https://github.com/farrantch/cap-to-talk"
 Issues = "https://github.com/farrantch/cap-to-talk/issues"
 
 [project.scripts]
-caps-talk = "caps_talk.cli:main"
-caps-talk-status = "caps_talk.status_ui:main"
-cap-to-talk = "caps_talk.cli:main"
-cap-to-talk-status = "caps_talk.status_ui:main"
+cap-to-talk = "cap_to_talk.cli:main"
+cap-to-talk-status = "cap_to_talk.status_ui:main"
 
 [tool.setuptools]
 package-dir = { "" = "src" }
