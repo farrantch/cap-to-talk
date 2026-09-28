@@ -4,11 +4,11 @@ set -euo pipefail
 
 project_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
 config_root="${XDG_CONFIG_HOME:-${HOME}/.config}"
-config_dir="${config_root}/caps-talk"
-legacy_cap_config_dir="${config_root}/cap-to-talk"
+config_dir="${config_root}/cap-to-talk"
+legacy_caps_config_dir="${config_root}/caps-talk"
 legacy_voice_config_dir="${config_root}/voice-dictate"
 autostart_dir="${config_root}/autostart"
-state_dir="${XDG_STATE_HOME:-${HOME}/.local/state}/caps-talk"
+state_dir="${XDG_STATE_HOME:-${HOME}/.local/state}/cap-to-talk"
 bin_dir="${HOME}/.local/bin"
 enable_autostart=false
 
@@ -17,7 +17,7 @@ usage() {
 Usage: ./scripts/install-user.sh [--autostart]
 
 Options:
-      --autostart  Start Caps Talk automatically at desktop login
+      --autostart  Start Cap To Talk automatically at desktop login
   -h, --help       Show this help
 EOF
 }
@@ -36,9 +36,9 @@ python3 -c 'import sys; raise SystemExit(sys.version_info < (3, 12))' \
 
 python3 -m venv "${project_dir}/.venv"
 "${project_dir}/.venv/bin/python" -m pip install --upgrade pip
-"${project_dir}/.venv/bin/python" -m pip uninstall --yes cap-to-talk \
+"${project_dir}/.venv/bin/python" -m pip uninstall --yes caps-talk \
     >/dev/null 2>&1 || true
-legacy_metadata_dir="${project_dir}/src/cap_to_talk.egg-info"
+legacy_metadata_dir="${project_dir}/src/caps_talk.egg-info"
 if [[ -d "${legacy_metadata_dir}" ]]; then
     rm -rf -- "${legacy_metadata_dir}"
 fi
@@ -59,10 +59,19 @@ link_command() {
     ln -sfn "${source}" "${destination}"
 }
 
-link_command caps-talk
-link_command caps-talk-status
 link_command cap-to-talk
 link_command cap-to-talk-status
+for legacy_command_name in caps-talk caps-talk-status; do
+    legacy_command_link="${bin_dir}/${legacy_command_name}"
+    legacy_expected_target="${project_dir}/.venv/bin/${legacy_command_name}"
+    if [[ -L "${legacy_command_link}" ]]; then
+        legacy_command_target="$(readlink "${legacy_command_link}")"
+        if [[ "${legacy_command_target}" == "${legacy_expected_target}" \
+            || ! -e "${legacy_command_link}" ]]; then
+            rm -f -- "${legacy_command_link}"
+        fi
+    fi
+done
 
 install_if_missing() {
     local destination="$1"
@@ -79,34 +88,35 @@ install_if_missing() {
 
 install_if_missing \
     "${config_dir}/hotwords.txt" \
-    "${legacy_cap_config_dir}/hotwords.txt" \
+    "${legacy_caps_config_dir}/hotwords.txt" \
     "${legacy_voice_config_dir}/hotwords.txt" \
     "${project_dir}/config/hotwords.example.txt"
 install_if_missing \
     "${config_dir}/master-hotwords.txt" \
-    "${legacy_cap_config_dir}/master-hotwords.txt" \
+    "${legacy_caps_config_dir}/master-hotwords.txt" \
     "${legacy_voice_config_dir}/master-hotwords.txt" \
     "${project_dir}/config/master-hotwords.example.txt"
 install_if_missing \
     "${config_dir}/config.toml" \
-    "${legacy_cap_config_dir}/config.toml" \
+    "${legacy_caps_config_dir}/config.toml" \
     "${project_dir}/config/config.example.toml"
 
 for legacy_desktop in \
-    "${autostart_dir}/cap-to-talk.desktop" \
+    "${autostart_dir}/caps-talk.desktop" \
     "${autostart_dir}/capslock-voice-dictation.desktop"; do
-    if [[ -f "${legacy_desktop}" ]] \
-        && grep -Fq "${project_dir}" "${legacy_desktop}"; then
+    [[ -f "${legacy_desktop}" ]] || continue
+    if grep -Eq '^Name=(Caps Talk|Caps Lock Voice Dictation)$' "${legacy_desktop}" \
+        || grep -Fq "${project_dir}" "${legacy_desktop}"; then
         rm -f -- "${legacy_desktop}"
     fi
 done
 
-autostart_file="${autostart_dir}/caps-talk.desktop"
+autostart_file="${autostart_dir}/cap-to-talk.desktop"
 if [[ "${enable_autostart}" == true ]]; then
     mkdir -p "${autostart_dir}"
     escaped_project_dir="${project_dir//|/\\|}"
     sed "s|@PROJECT_DIR@|${escaped_project_dir}|g" \
-        "${project_dir}/autostart/caps-talk.desktop.in" \
+        "${project_dir}/autostart/cap-to-talk.desktop.in" \
         >"${autostart_file}"
     printf 'Installed the commands and configuration; desktop autostart is enabled.\n'
 else

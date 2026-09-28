@@ -1,11 +1,11 @@
 # Contributing
 
-Thanks for helping improve Caps Talk. Bug reports, documentation fixes, and
+Thanks for helping improve Cap To Talk. Bug reports, documentation fixes, and
 focused pull requests are welcome.
 
 ## Before opening an issue
 
-- Run `caps-talk check` and include its non-sensitive output.
+- Run `cap-to-talk check` and include its non-sensitive output.
 - Search existing issues for the same behavior.
 - Never post dictated text, audio, private glossary entries, or credentials.
 - Use the private security-reporting link in [SECURITY.md](SECURITY.md) for
@@ -13,7 +13,7 @@ focused pull requests are welcome.
 
 ## Development setup
 
-Caps Talk targets Python 3.12+ on Linux/X11.
+Cap To Talk targets Python 3.12+ on Linux/X11.
 
 ```bash
 python3 -m venv .venv

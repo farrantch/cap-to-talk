@@ -7,7 +7,7 @@ import socket
 import threading
 import tkinter as tk
 
-from caps_talk.config import Settings, load_settings
+from cap_to_talk.config import Settings, load_settings
 
 LOGGER = logging.getLogger(__name__)
 RIGHT_MARGIN = 20
@@ -47,7 +47,7 @@ class StatusWindow:
             self.root.after_cancel(self.hide_job)
             self.hide_job = None
 
-        if text.lower() in ("ready", "caps talk ready", "cap to talk ready", "idle"):
+        if text.lower() in ("ready", "cap to talk ready", "caps talk ready", "idle"):
             self._hide()
             return
 

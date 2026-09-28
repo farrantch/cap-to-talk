@@ -7,7 +7,7 @@ import shutil
 import subprocess
 import time
 
-from caps_talk.text import normalize_for_typing
+from cap_to_talk.text import normalize_for_typing
 
 LOGGER = logging.getLogger(__name__)
 REQUIRED_COMMANDS = ("xdotool", "xprintidle", "notify-send")

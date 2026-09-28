@@ -1,4 +1,4 @@
-"""Command-line entry point for Caps Talk."""
+"""Command-line entry point for Cap To Talk."""
 
 from __future__ import annotations
 
@@ -16,14 +16,14 @@ from typing import Any
 import requests
 import sounddevice as sd
 
-from caps_talk import __version__
-from caps_talk.config import Settings, load_settings
-from caps_talk.x11 import missing_commands
+from cap_to_talk import __version__
+from cap_to_talk.config import Settings, load_settings
+from cap_to_talk.x11 import missing_commands
 
 
 def _parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
-        prog="caps-talk",
+        prog="cap-to-talk",
         description="Local Caps Lock push-to-talk dictation for Linux/X11.",
     )
     parser.add_argument(
@@ -118,12 +118,12 @@ def main(argv: list[str] | None = None) -> int:
         settings = replace(settings, debug_transcripts=True)
 
     signal.signal(signal.SIGTERM, _raise_keyboard_interrupt)
-    from caps_talk.app import VoiceDictationApp
+    from cap_to_talk.app import VoiceDictationApp
 
     try:
         VoiceDictationApp(settings).run()
     except KeyboardInterrupt:
-        logging.getLogger(__name__).info("Caps Talk stopped")
+        logging.getLogger(__name__).info("Cap To Talk stopped")
     return 0
 
 

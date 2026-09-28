@@ -1,10 +1,10 @@
 from unittest.mock import patch
 
-from caps_talk.x11 import _type
+from cap_to_talk.x11 import _type
 
 
 def test_type_uses_stdin_for_multiline_text():
-    with patch("caps_talk.x11.subprocess.run") as run:
+    with patch("cap_to_talk.x11.subprocess.run") as run:
         _type("first\n\nsecond", 2)
 
     assert run.call_args.kwargs["input"] == "first\n\nsecond"

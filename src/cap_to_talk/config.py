@@ -1,4 +1,4 @@
-"""Configuration loading for Caps Talk."""
+"""Configuration loading for Cap To Talk."""
 
 from __future__ import annotations
 
@@ -12,8 +12,8 @@ from typing import Any
 def default_config_dir() -> Path:
     root = os.environ.get("XDG_CONFIG_HOME")
     if root:
-        return Path(root).expanduser() / "caps-talk"
-    return Path.home() / ".config" / "caps-talk"
+        return Path(root).expanduser() / "cap-to-talk"
+    return Path.home() / ".config" / "cap-to-talk"
 
 
 @dataclass(frozen=True, slots=True)
@@ -82,10 +82,10 @@ _ENV_FIELD_SPECS: dict[str, tuple[str, type]] = {
     "STATUS_PORT": ("status_port", int),
 }
 
-# Read legacy variables first so the new CAPS_TALK_* names win when both exist.
+# Read legacy variables first so the new CAP_TO_TALK_* names win when both exist.
 _ENV_FIELDS: dict[str, tuple[str, type]] = {
-    **{f"CAP_TO_TALK_{suffix}": spec for suffix, spec in _ENV_FIELD_SPECS.items()},
     **{f"CAPS_TALK_{suffix}": spec for suffix, spec in _ENV_FIELD_SPECS.items()},
+    **{f"CAP_TO_TALK_{suffix}": spec for suffix, spec in _ENV_FIELD_SPECS.items()},
 }
 
 

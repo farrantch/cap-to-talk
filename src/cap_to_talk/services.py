@@ -12,9 +12,9 @@ from typing import Any
 import numpy as np
 import requests
 
-from caps_talk.config import Settings
-from caps_talk.glossary import select_relevant_terms
-from caps_talk.text import strip_wrapping_quotes
+from cap_to_talk.config import Settings
+from cap_to_talk.glossary import select_relevant_terms
+from cap_to_talk.text import strip_wrapping_quotes
 
 LOGGER = logging.getLogger(__name__)
 

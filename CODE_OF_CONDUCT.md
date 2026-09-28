@@ -2,7 +2,7 @@
 
 ## Our standards
 
-We want Caps Talk to be a welcoming, harassment-free project. Be respectful,
+We want Cap To Talk to be a welcoming, harassment-free project. Be respectful,
 assume good faith, offer constructive feedback, and focus criticism on ideas
 and code rather than people.
 

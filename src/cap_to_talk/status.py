@@ -6,7 +6,7 @@ import socket
 import subprocess
 from contextlib import suppress
 
-from caps_talk.config import Settings
+from cap_to_talk.config import Settings
 
 
 def send_status(settings: Settings, message: str) -> None:
@@ -29,7 +29,7 @@ def notify(settings: Settings, message: str, timeout: int = 1_500) -> None:
                 settings.notify_id,
                 "-t",
                 str(timeout),
-                "Caps Talk",
+                "Cap To Talk",
                 message,
             ],
             stdout=subprocess.DEVNULL,
