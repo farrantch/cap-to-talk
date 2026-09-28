@@ -15,7 +15,7 @@ private information, or sustained disruption of project spaces.
 Maintainers may edit, remove, or reject contributions and may temporarily or
 permanently ban participants whose conduct is inappropriate, threatening, or
 harmful. Reports can be made privately through the repository's
-[security advisory form](https://github.com/farrantch/caps-talk/security/advisories/new).
+[security advisory form](https://github.com/farrantch/cap-to-talk/security/advisories/new).
 Reports will be reviewed promptly and handled as confidentially as practical.
 
 This policy applies in all project spaces and whenever someone is officially

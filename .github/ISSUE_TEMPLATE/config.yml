@@ -1,5 +1,5 @@
 blank_issues_enabled: false
 contact_links:
   - name: Report a security vulnerability
-    url: https://github.com/farrantch/caps-talk/security/advisories/new
+    url: https://github.com/farrantch/cap-to-talk/security/advisories/new
     about: Send security-sensitive reports privately.

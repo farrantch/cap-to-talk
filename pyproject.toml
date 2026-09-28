@@ -36,8 +36,8 @@ dev = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/farrantch/caps-talk"
-Issues = "https://github.com/farrantch/caps-talk/issues"
+Homepage = "https://github.com/farrantch/cap-to-talk"
+Issues = "https://github.com/farrantch/cap-to-talk/issues"
 
 [project.scripts]
 caps-talk = "caps_talk.cli:main"

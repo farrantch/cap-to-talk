@@ -1,6 +1,6 @@
 [Unit]
 Description=Caps Talk local OpenASR server
-Documentation=https://github.com/farrantch/caps-talk
+Documentation=https://github.com/farrantch/cap-to-talk
 
 [Service]
 ExecStart=@OPENASR_BIN@ serve --model qwen3-asr-0.6b --addr 127.0.0.1:8080

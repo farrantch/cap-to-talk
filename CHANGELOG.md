@@ -34,6 +34,6 @@ All notable changes to Caps Talk are documented here. This project follows
 - Privacy-conscious logging and immediate temporary-audio cleanup.
 - Automated tests, linting, dependency auditing, and CodeQL analysis.
 
-[Unreleased]: https://github.com/farrantch/caps-talk/compare/v0.2.0...HEAD
-[0.2.0]: https://github.com/farrantch/caps-talk/compare/v0.1.0...v0.2.0
-[0.1.0]: https://github.com/farrantch/caps-talk/releases/tag/v0.1.0
+[Unreleased]: https://github.com/farrantch/cap-to-talk/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/farrantch/cap-to-talk/compare/v0.1.0...v0.2.0
+[0.1.0]: https://github.com/farrantch/cap-to-talk/releases/tag/v0.1.0

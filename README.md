@@ -3,8 +3,8 @@
   <h1>Caps Talk</h1>
   <p><strong>Push-to-talk dictation for Linux/X11, powered by local AI.<strong></p>
 
-  [![CI](https://github.com/farrantch/caps-talk/actions/workflows/ci.yml/badge.svg)](https://github.com/farrantch/caps-talk/actions/workflows/ci.yml)
-  [![Latest release](https://img.shields.io/github/v/release/farrantch/caps-talk)](https://github.com/farrantch/caps-talk/releases/latest)
+  [![CI](https://github.com/farrantch/cap-to-talk/actions/workflows/ci.yml/badge.svg)](https://github.com/farrantch/cap-to-talk/actions/workflows/ci.yml)
+  [![Latest release](https://img.shields.io/github/v/release/farrantch/cap-to-talk)](https://github.com/farrantch/cap-to-talk/releases/latest)
   [![License: MIT](https://img.shields.io/badge/license-MIT-31c3e0.svg)](LICENSE)
   ![Platform: Linux/X11](https://img.shields.io/badge/platform-Linux%2FX11-ff6b5f.svg)
 </div>
@@ -30,8 +30,8 @@ keyboard layout when it exits normally.
 ## Install
 
 ```bash
-git clone https://github.com/farrantch/caps-talk.git
-cd caps-talk
+git clone https://github.com/farrantch/cap-to-talk.git
+cd cap-to-talk
 ```
 
 ### On demand (default)
