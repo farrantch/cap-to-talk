@@ -1,21 +1,70 @@
-# Copy this file to ~/.config/cap-to-talk/config.toml.
-# Every setting is optional; these are the defaults.
+# Linux: ~/.config/cap-to-talk/config.toml
+# macOS: ~/Library/Application Support/cap-to-talk/config.toml
+# Windows: %APPDATA%/cap-to-talk/config.toml
+# Local providers and the two-stage pipeline are the defaults.
+# Provider examples: docs/providers.md
+
+[pipeline]
+# "two-stage": transcription followed by optional cleanup.
+# "single": one audio-capable model transcribes and cleans up in one request.
+mode = "two-stage"
 
 [audio]
 rate = 16000
+# Optional microphone name (including host API) or integer device index.
+# device = "USB Microphone, Windows WASAPI"
 post_roll_seconds = 0.25
 
 [input]
-# X11 keycode 66 is normally Caps Lock.
+# auto: Caps Lock on Windows, the legacy keycode on Linux, F8 on macOS.
+# Choices: auto, caps_lock (Linux/Windows), f1 through f12 (all platforms).
+hotkey = "auto"
+# X11 keycode used for auto/caps_lock on Linux; normally Caps Lock.
 ptt_keycode = 66
 
-[services]
-asr_url = "http://127.0.0.1:8080/v1/audio/transcriptions"
-asr_health_url = "http://127.0.0.1:8080/health"
-asr_model = "qwen3-asr-0.6b"
-ollama_url = "http://127.0.0.1:11434/api/chat"
-ollama_health_url = "http://127.0.0.1:11434/api/tags"
-rewrite_model = "qwen3:4b-instruct"
+[transcription]
+# Used only in two-stage mode.
+# Choices: openasr, openai, openai-compatible.
+provider = "openasr"
+# These are the OpenASR defaults; cloud/custom providers require a model.
+# url = "http://127.0.0.1:8080/v1/audio/transcriptions"
+# health_url = "http://127.0.0.1:8080/health"
+# model = "qwen3-asr-0.6b"
+# Credential source: "environment" (default) or "keyring" (desktop app).
+# api_key_source = "environment"
+# Name of an environment variable or saved credential, not an API key:
+# api_key_env = ""
+timeout_seconds = 120
+# Send the personal recognition vocabulary to this provider.
+send_hotwords = true
+
+[rewrite]
+# Used only in two-stage mode.
+# Choices: ollama, openai, openai-compatible, anthropic, none.
+provider = "ollama"
+# These are the Ollama defaults; cloud/custom providers require a model.
+# url = "http://127.0.0.1:11434/api/chat"
+# health_url = "http://127.0.0.1:11434/api/tags"
+# model = "qwen3:4b-instruct"
+# api_key_env = ""
+timeout_seconds = 120
+max_output_tokens = 1024
+
+# To use one model, set [pipeline].mode = "single" and uncomment this section.
+# Choices: openai, openai-compatible. An audio-capable model is required.
+# [dictation]
+# provider = "openai"
+# model = "gpt-audio-1.5"
+# url = "https://api.openai.com/v1/chat/completions"
+# api_key_env = "OPENAI_API_KEY"
+# timeout_seconds = 120
+# max_output_tokens = 2048
+# send_hotwords = true
+
+# Existing [services] settings and CAPS_TALK_*/CAP_TO_TALK_* service environment
+# variables remain supported. Explicit new provider settings take precedence.
+# Provider overrides use CAP_TO_TALK_TRANSCRIPTION_*, CAP_TO_TALK_REWRITE_*,
+# and CAP_TO_TALK_DICTATION_*. Select a pipeline with CAP_TO_TALK_PIPELINE_MODE.
 
 [glossary]
 hotword_boost = 3.0
@@ -26,7 +75,7 @@ hotword_boost = 3.0
 typing_delay_ms = 0
 
 [privacy]
-# Warning: enabling this writes dictated text to logs.
+# Enabling this writes dictated text to logs.
 debug_transcripts = false
 
 [ui]

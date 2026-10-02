@@ -1,0 +1,162 @@
+name: Desktop builds
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      signed:
+        description: Sign and notarize installers (requires configured accounts)
+        type: boolean
+        default: false
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: desktop-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Build (${{ matrix.label }})
+    runs-on: ${{ matrix.os }}
+    permissions:
+      contents: read
+      id-token: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-24.04
+            label: linux-amd64
+          - os: windows-2025
+            label: windows-x64
+          - os: macos-15
+            label: macos-arm64
+          - os: macos-15-intel
+            label: macos-x86_64
+    env:
+      QT_QPA_PLATFORM: offscreen
+      REQUIRE_SIGNING: ${{ github.event_name == 'push' || inputs.signed }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Install Linux libraries
+        if: runner.os == 'Linux'
+        run: >-
+          sudo apt-get update && sudo apt-get install --yes
+          libportaudio2 libegl1 libopengl0 libxcb-cursor0 libxkbcommon-x11-0
+      - name: Install build dependencies
+        run: python -m pip install -e ".[dev,desktop,packaging]"
+      - name: Validate release version
+        if: github.event_name == 'push'
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: python packaging/build_desktop.py validate-tag
+      - run: ruff check .
+      - run: ruff format --check .
+      - run: >-
+          python -m pytest
+          --ignore=tests/test_install.py
+          --ignore=tests/test_install_user.py
+          --ignore=tests/test_start.py
+      - run: pip-audit
+      - name: Build desktop application
+        env:
+          MACOS_CERTIFICATE_BASE64: ${{ (github.event_name == 'push' || inputs.signed) && secrets.MACOS_CERTIFICATE_BASE64 || '' }}
+          MACOS_CERTIFICATE_PASSWORD: ${{ (github.event_name == 'push' || inputs.signed) && secrets.MACOS_CERTIFICATE_PASSWORD || '' }}
+          MACOS_CODESIGN_IDENTITY: ${{ (github.event_name == 'push' || inputs.signed) && secrets.MACOS_CODESIGN_IDENTITY || '' }}
+        run: python packaging/build_desktop.py bundle
+      - name: Azure sign-in
+        if: runner.os == 'Windows' && (github.event_name == 'push' || inputs.signed)
+        uses: azure/login@v3
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      - name: Sign Windows application
+        if: runner.os == 'Windows' && (github.event_name == 'push' || inputs.signed)
+        uses: azure/artifact-signing-action@v2
+        with:
+          endpoint: ${{ vars.AZURE_SIGNING_ENDPOINT }}
+          signing-account-name: ${{ vars.AZURE_SIGNING_ACCOUNT }}
+          certificate-profile-name: ${{ vars.AZURE_SIGNING_PROFILE }}
+          files-folder: ${{ github.workspace }}\dist\CapToTalk
+          files-folder-filter: exe,dll,pyd
+          files-folder-recurse: true
+          file-digest: SHA256
+          timestamp-rfc3161: http://timestamp.acs.microsoft.com
+          timestamp-digest: SHA256
+      - name: Test the bundled application
+        run: python packaging/build_desktop.py smoke
+      - name: Install Windows installer compiler
+        if: runner.os == 'Windows'
+        run: choco install innosetup --yes --no-progress
+      - name: Build installers
+        env:
+          MACOS_CODESIGN_IDENTITY: ${{ (github.event_name == 'push' || inputs.signed) && secrets.MACOS_CODESIGN_IDENTITY || '' }}
+          MACOS_NOTARY_KEY_BASE64: ${{ (github.event_name == 'push' || inputs.signed) && secrets.MACOS_NOTARY_KEY_BASE64 || '' }}
+          MACOS_NOTARY_KEY_ID: ${{ (github.event_name == 'push' || inputs.signed) && secrets.MACOS_NOTARY_KEY_ID || '' }}
+          MACOS_NOTARY_ISSUER: ${{ (github.event_name == 'push' || inputs.signed) && secrets.MACOS_NOTARY_ISSUER || '' }}
+        run: python packaging/build_desktop.py package
+      - name: Sign Windows installer
+        if: runner.os == 'Windows' && (github.event_name == 'push' || inputs.signed)
+        uses: azure/artifact-signing-action@v2
+        with:
+          endpoint: ${{ vars.AZURE_SIGNING_ENDPOINT }}
+          signing-account-name: ${{ vars.AZURE_SIGNING_ACCOUNT }}
+          certificate-profile-name: ${{ vars.AZURE_SIGNING_PROFILE }}
+          files-folder: ${{ github.workspace }}\dist\installers
+          files-folder-filter: exe
+          file-digest: SHA256
+          timestamp-rfc3161: http://timestamp.acs.microsoft.com
+          timestamp-digest: SHA256
+      - name: Verify Windows signatures
+        if: runner.os == 'Windows' && (github.event_name == 'push' || inputs.signed)
+        shell: pwsh
+        run: |
+          Get-ChildItem 'dist/CapToTalk/CapToTalk.exe', 'dist/installers/*.exe' | ForEach-Object {
+            if ((Get-AuthenticodeSignature $_.FullName).Status -ne 'Valid') {
+              throw "Invalid signature: $($_.Name)"
+            }
+          }
+      - name: Generate checksums
+        run: python packaging/build_desktop.py checksums
+      - uses: actions/upload-artifact@v7
+        with:
+          name: cap-to-talk-${{ matrix.label }}-${{ (github.event_name == 'push' || inputs.signed) && 'release' || 'unsigned-test' }}
+          path: dist/installers/*
+          if-no-files-found: error
+          retention-days: 14
+          compression-level: 0
+
+  draft-release:
+    name: Prepare draft release
+    if: github.event_name == 'push'
+    needs: build
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/download-artifact@v8
+        with:
+          pattern: cap-to-talk-*-release
+          path: release-assets
+      - name: Collect installers and checksums
+        run: python packaging/collect_release.py
+      - name: Create draft beta release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: >-
+          gh release create "$RELEASE_TAG" release-assets/files/*
+          --verify-tag --draft --prerelease
+          --title "Cap To Talk $RELEASE_TAG"
+          --notes-file docs/desktop-release-notes.md

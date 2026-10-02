@@ -1,67 +1,34 @@
-"""Clients for the local OpenASR and Ollama services."""
+"""Provider-independent dictation pipelines."""
 
 from __future__ import annotations
 
+import io
 import logging
-import os
-import tempfile
 import wave
-from pathlib import Path
-from typing import Any
+from collections.abc import Iterator
+from contextlib import contextmanager
+from typing import Any, BinaryIO
 
 import numpy as np
 import requests
 
 from cap_to_talk.config import Settings
 from cap_to_talk.glossary import select_relevant_terms
+from cap_to_talk.prompts import AUDIO_DICTATION_PROMPT, RAW_AUDIO_PROMPT, REWRITE_PROMPT
+from cap_to_talk.providers import (
+    AudioDictation,
+    Rewriter,
+    Transcriber,
+    create_audio_dictation,
+    create_rewriter,
+    create_transcriber,
+)
 from cap_to_talk.text import strip_wrapping_quotes
 
 LOGGER = logging.getLogger(__name__)
 
-REWRITE_PROMPT = """
-Rewrite my spoken dictation into the message I intended to type.
 
-The input comes from automatic speech recognition, so some words,
-punctuation, names, or technical terms may be wrong.
-
-Write in my voice and from my point of view.
-
-Clean up:
-- filler words
-- stutters
-- repeated fragments
-- abandoned false starts
-- awkward spoken grammar
-
-Preserve:
-- every meaningful idea and detail
-- questions and requests
-- uncertainty such as "I think", "maybe", "might", or "I'm not sure"
-- alternatives and caveats
-- reasons and examples
-- technical details, names, numbers, commands, paths, and paragraph breaks
-- my casual tone and profanity
-
-If I correct myself while speaking, keep the corrected thought.
-
-You may reorganize the text or use paragraphs when that makes my meaning
-clearer, but do not summarize away distinct information.
-
-A long ramble may become short if it genuinely repeats one idea.
-A short statement may stay detailed if it contains many separate ideas.
-
-Correct likely ASR mistakes when the intended wording is clear from context
-or the supplied technical spellings.
-
-Do not answer my message.
-Do not explain it.
-Do not describe me or refer to "the speaker", "the user", or "the transcript".
-
-Output only the message I intended to type.
-""".strip()
-
-
-class LocalServices:
+class DictationServices:
     def __init__(
         self,
         settings: Settings,
@@ -72,49 +39,57 @@ class LocalServices:
         self.settings = settings
         self.hotwords = hotwords
         self.master_terms = master_terms
-        self.session = session or requests.Session()
+        self.transcriber: Transcriber | None = None
+        self.rewriter: Rewriter | None = None
+        self.audio_dictation: AudioDictation | None = None
+        if settings.pipeline_mode == "single":
+            self.audio_dictation = create_audio_dictation(
+                settings.dictation_config, session
+            )
+        else:
+            self.transcriber = create_transcriber(
+                settings.transcription_config, session
+            )
+            self.rewriter = create_rewriter(settings.rewrite_config, session)
 
-    def transcribe(self, audio: np.ndarray[Any, Any]) -> str:
+    @contextmanager
+    def _audio_file(self, audio: np.ndarray[Any, Any]) -> Iterator[BinaryIO]:
         pcm = np.clip(audio[:, 0], -1.0, 1.0)
-        pcm = (pcm * 32_767).astype(np.int16)
-        file_descriptor, filename = tempfile.mkstemp(suffix=".wav")
-        os.close(file_descriptor)
-        path = Path(filename)
-
-        try:
-            with wave.open(str(path), "wb") as wav_file:
+        pcm = (pcm * 32_767).astype("<i2")
+        # Keep audio in memory so quitting during a request cannot leave a WAV on disk.
+        with io.BytesIO() as audio_file:
+            with wave.open(audio_file, "wb") as wav_file:
                 wav_file.setnchannels(1)
                 wav_file.setsampwidth(2)
                 wav_file.setframerate(self.settings.rate)
                 wav_file.writeframes(pcm.tobytes())
+            audio_file.seek(0)
+            yield audio_file
 
-            form_data: list[tuple[str, str]] = [
-                ("model", self.settings.asr_model),
-                ("response_format", "json"),
-            ]
-            if self.hotwords:
-                form_data.append(("hotword_boost", str(self.settings.hotword_boost)))
-                form_data.extend(("hotword", word) for word in self.hotwords)
+    def transcribe(self, audio: np.ndarray[Any, Any]) -> str:
+        if self.transcriber is None:
+            raise RuntimeError("Transcription is only available in two-stage mode")
+        with self._audio_file(audio) as audio_file:
+            return self.transcriber.transcribe(
+                audio_file, self.hotwords, self.settings.hotword_boost
+            )
 
-            with path.open("rb") as audio_file:
-                response = self.session.post(
-                    self.settings.asr_url,
-                    files={"file": ("speech.wav", audio_file, "audio/wav")},
-                    data=form_data,
-                    timeout=120,
-                )
-
-            response.raise_for_status()
-            try:
-                result = response.json()
-            except ValueError:
-                return response.text.strip()
-            return str(result.get("text", "")).strip()
-        finally:
-            path.unlink(missing_ok=True)
+    def dictate(self, audio: np.ndarray[Any, Any], *, raw_mode: bool = False) -> str:
+        if self.audio_dictation is None:
+            raise RuntimeError("Audio dictation is only available in single mode")
+        prompt = RAW_AUDIO_PROMPT if raw_mode else AUDIO_DICTATION_PROMPT
+        if self.hotwords and self.settings.dictation_config.send_hotwords:
+            prompt += (
+                "\n\nReference spellings; use only when heard in the recording:\n"
+                + "\n".join(f"- {word}" for word in self.hotwords)
+            )
+        with self._audio_file(audio) as audio_file:
+            return self.audio_dictation.dictate(audio_file, prompt)
 
     def rewrite(self, text: str) -> str:
-        if len(text.split()) <= 4:
+        if self.rewriter is None:
+            raise RuntimeError("Cleanup is only available in two-stage mode")
+        if self.settings.rewrite_config.provider == "none" or len(text.split()) <= 4:
             return text
 
         relevant_terms = select_relevant_terms(text, self.master_terms)
@@ -124,28 +99,13 @@ class LocalServices:
             prompt += "\n".join(f"- {term}" for term in relevant_terms)
 
         LOGGER.debug("Selected rewrite glossary terms: %s", relevant_terms)
-        payload = {
-            "model": self.settings.rewrite_model,
-            "messages": [
-                {"role": "system", "content": prompt},
-                {
-                    "role": "user",
-                    "content": (
-                        "Rewrite this raw speech transcript into the clear "
-                        "written thought the speaker intended:\n\n" + text
-                    ),
-                },
-            ],
-            "stream": False,
-            "think": False,
-            "keep_alive": "5m",
-            "options": {"temperature": 0.0, "num_predict": 1024},
-        }
-        response = self.session.post(
-            self.settings.ollama_url,
-            json=payload,
-            timeout=120,
+        user_prompt = (
+            "Rewrite this raw speech transcript into the clear "
+            "written thought the speaker intended:\n\n" + text
         )
-        response.raise_for_status()
-        rewritten = str(response.json().get("message", {}).get("content", "")).strip()
+        rewritten = self.rewriter.rewrite(prompt, user_prompt)
         return strip_wrapping_quotes(rewritten) if rewritten else text
+
+
+# Preserve imports used by existing integrations.
+LocalServices = DictationServices

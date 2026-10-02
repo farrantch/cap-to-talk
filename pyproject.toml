@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "cap-to-talk"
-version = "0.2.0"
-description = "Local Caps Lock push-to-talk dictation for Linux/X11"
+version = "0.3.0b1"
+description = "Push-to-talk dictation with configurable AI providers"
 readme = "README.md"
 requires-python = ">=3.12"
 license = "MIT"
@@ -15,19 +15,33 @@ classifiers = [
     "Development Status :: 3 - Alpha",
     "Environment :: X11 Applications",
     "Operating System :: POSIX :: Linux",
+    "Operating System :: MacOS :: MacOS X",
+    "Operating System :: Microsoft :: Windows",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.12",
     "Topic :: Multimedia :: Sound/Audio :: Speech",
 ]
 dependencies = [
     "numpy>=2.0,<3",
-    "python-xlib>=0.33,<1",
+    "python-xlib>=0.33,<1; sys_platform == 'linux'",
+    "pyobjc-framework-Quartz>=12.2,<13; sys_platform == 'darwin'",
+    "pyobjc-framework-ApplicationServices>=12.2,<13; sys_platform == 'darwin'",
+    "pyobjc-framework-AVFoundation>=12.2,<13; sys_platform == 'darwin'",
     "RapidFuzz>=3.9,<4",
     "requests>=2.32,<3",
     "sounddevice>=0.5,<1",
 ]
 
 [project.optional-dependencies]
+desktop = [
+    "PySide6-Essentials>=6.8,<7",
+    "keyring>=25.6,<26",
+    "tomlkit>=0.13,<1",
+]
+packaging = [
+    "pyinstaller>=6.16,<7",
+    "pillow>=11,<13",
+]
 dev = [
     "build>=1.2,<2",
     "pip-audit>=2.9,<3",
@@ -42,6 +56,12 @@ Issues = "https://github.com/farrantch/cap-to-talk/issues"
 [project.scripts]
 cap-to-talk = "cap_to_talk.cli:main"
 cap-to-talk-status = "cap_to_talk.status_ui:main"
+
+[project.gui-scripts]
+cap-to-talk-desktop = "cap_to_talk.gui:main"
+
+[tool.setuptools.package-data]
+cap_to_talk = ["assets/*.png"]
 
 [tool.setuptools]
 package-dir = { "" = "src" }

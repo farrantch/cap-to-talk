@@ -9,6 +9,7 @@ assume_yes=false
 start_app=true
 install_packages=true
 enable_autostart=false
+install_local_services=true
 
 usage() {
     cat <<'EOF'
@@ -19,6 +20,7 @@ Options:
       --autostart             Start Cap To Talk automatically at desktop login
       --no-start              Install without starting Cap To Talk
       --skip-system-packages  Do not use apt-get
+      --skip-local-services   Do not install OpenASR, Ollama, or local models
   -h, --help                  Show this help
 EOF
 }
@@ -65,6 +67,7 @@ while (($#)); do
         --autostart) enable_autostart=true ;;
         --no-start) start_app=false ;;
         --skip-system-packages) install_packages=false ;;
+        --skip-local-services) install_local_services=false ;;
         -h|--help) usage; exit 0 ;;
         *) fail "Unknown option: $1" ;;
     esac
@@ -80,11 +83,18 @@ fi
 cat <<'EOF'
 Cap To Talk will:
   • install missing Ubuntu/Debian desktop packages (with sudo)
+  • create a Python virtual environment inside this checkout
+EOF
+
+if [[ "${install_local_services}" == true ]]; then
+    cat <<'EOF'
   • install OpenASR and Ollama from their official installers if missing
   • download roughly 3.5 GB of local models
-  • create a Python virtual environment inside this checkout
   • add a namespaced OpenASR user service
 EOF
+else
+    printf '  • use AI providers configured in ~/.config/cap-to-talk/config.toml\n'
+fi
 
 if [[ "${enable_autostart}" == true ]]; then
     printf '  • start Cap To Talk automatically at desktop login\n'
@@ -137,13 +147,15 @@ required_commands=(
     notify-send
     python3
     setxkbmap
-    systemctl
     xdotool
     xkbcomp
     xmodmap
     xprintidle
     xset
 )
+if [[ "${install_local_services}" == true ]]; then
+    required_commands+=(systemctl)
+fi
 for command_name in "${required_commands[@]}"; do
     command -v "${command_name}" >/dev/null 2>&1 \
         || fail "Required command not found: ${command_name}"
@@ -152,56 +164,58 @@ python3 -c 'import sys; raise SystemExit(sys.version_info < (3, 12))' \
     || fail "Python 3.12 or newer is required."
 
 export PATH="${HOME}/.local/bin:${PATH}"
-if ! command -v openasr >/dev/null 2>&1; then
-    log "Installing OpenASR"
-    run_official_installer "OpenASR" "https://dl.openasr.org/install.sh"
-fi
-openasr_bin="$(command -v openasr || true)"
-[[ -n "${openasr_bin}" ]] || fail "OpenASR was not found after installation."
-
-log "Preparing the OpenASR model"
-"${openasr_bin}" pull "${asr_model}"
-
-systemd_user_dir="${XDG_CONFIG_HOME:-${HOME}/.config}/systemd/user"
-mkdir -p "${systemd_user_dir}"
-legacy_service_file="${systemd_user_dir}/caps-talk-openasr.service"
-if [[ -f "${legacy_service_file}" ]]; then
-    systemctl --user disable --now caps-talk-openasr.service \
-        2>/dev/null || true
-    rm -f -- "${legacy_service_file}"
-fi
-escaped_openasr_bin="${openasr_bin//|/\\|}"
-sed "s|@OPENASR_BIN@|${escaped_openasr_bin}|g" \
-    "${project_dir}/systemd/cap-to-talk-openasr.service.in" \
-    >"${systemd_user_dir}/cap-to-talk-openasr.service"
-systemctl --user daemon-reload
-
-if ! wait_for_url http://127.0.0.1:8080/health 2; then
-    log "Starting the Cap To Talk OpenASR service"
-    systemctl --user enable --now cap-to-talk-openasr.service
-fi
-
-if ! command -v ollama >/dev/null 2>&1; then
-    log "Installing Ollama"
-    run_official_installer "Ollama" "https://ollama.com/install.sh"
-fi
-
-if ! wait_for_url http://127.0.0.1:11434/api/tags 2; then
-    log "Starting Ollama"
-    if systemctl list-unit-files ollama.service --no-legend 2>/dev/null \
-        | grep -q ollama.service; then
-        sudo systemctl enable --now ollama.service
-    else
-        state_dir="${XDG_STATE_HOME:-${HOME}/.local/state}/cap-to-talk"
-        mkdir -p "${state_dir}"
-        nohup ollama serve >"${state_dir}/ollama.log" 2>&1 &
+if [[ "${install_local_services}" == true ]]; then
+    if ! command -v openasr >/dev/null 2>&1; then
+        log "Installing OpenASR"
+        run_official_installer "OpenASR" "https://dl.openasr.org/install.sh"
     fi
-fi
-wait_for_url http://127.0.0.1:11434/api/tags 30 \
-    || fail "Ollama did not become ready."
+    openasr_bin="$(command -v openasr || true)"
+    [[ -n "${openasr_bin}" ]] || fail "OpenASR was not found after installation."
 
-log "Preparing the cleanup model"
-ollama pull "${rewrite_model}"
+    log "Preparing the OpenASR model"
+    "${openasr_bin}" pull "${asr_model}"
+
+    systemd_user_dir="${XDG_CONFIG_HOME:-${HOME}/.config}/systemd/user"
+    mkdir -p "${systemd_user_dir}"
+    legacy_service_file="${systemd_user_dir}/caps-talk-openasr.service"
+    if [[ -f "${legacy_service_file}" ]]; then
+        systemctl --user disable --now caps-talk-openasr.service \
+            2>/dev/null || true
+        rm -f -- "${legacy_service_file}"
+    fi
+    escaped_openasr_bin="${openasr_bin//|/\\|}"
+    sed "s|@OPENASR_BIN@|${escaped_openasr_bin}|g" \
+        "${project_dir}/systemd/cap-to-talk-openasr.service.in" \
+        >"${systemd_user_dir}/cap-to-talk-openasr.service"
+    systemctl --user daemon-reload
+
+    if ! wait_for_url http://127.0.0.1:8080/health 2; then
+        log "Starting the Cap To Talk OpenASR service"
+        systemctl --user enable --now cap-to-talk-openasr.service
+    fi
+
+    if ! command -v ollama >/dev/null 2>&1; then
+        log "Installing Ollama"
+        run_official_installer "Ollama" "https://ollama.com/install.sh"
+    fi
+
+    if ! wait_for_url http://127.0.0.1:11434/api/tags 2; then
+        log "Starting Ollama"
+        if systemctl list-unit-files ollama.service --no-legend 2>/dev/null \
+            | grep -q ollama.service; then
+            sudo systemctl enable --now ollama.service
+        else
+            state_dir="${XDG_STATE_HOME:-${HOME}/.local/state}/cap-to-talk"
+            mkdir -p "${state_dir}"
+            nohup ollama serve >"${state_dir}/ollama.log" 2>&1 &
+        fi
+    fi
+    wait_for_url http://127.0.0.1:11434/api/tags 30 \
+        || fail "Ollama did not become ready."
+
+    log "Preparing the cleanup model"
+    ollama pull "${rewrite_model}"
+fi
 
 log "Installing Cap To Talk"
 if [[ "${enable_autostart}" == true ]]; then
@@ -210,8 +224,10 @@ else
     "${project_dir}/scripts/install-user.sh"
 fi
 
-wait_for_url http://127.0.0.1:8080/health 60 \
-    || fail "OpenASR did not become ready. Check its user service."
+if [[ "${install_local_services}" == true ]]; then
+    wait_for_url http://127.0.0.1:8080/health 60 \
+        || fail "OpenASR did not become ready. Check its user service."
+fi
 
 if [[ "${start_app}" == true && "${XDG_SESSION_TYPE:-}" == "x11" \
     && -n "${DISPLAY:-}" ]]; then
