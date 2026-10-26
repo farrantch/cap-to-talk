@@ -5,6 +5,12 @@ All notable changes to Cap To Talk are documented here. This project follows
 
 ## [Unreleased]
 
+### Added
+
+- The desktop app shows dictation status in a bottom-right popup, like the
+  Linux launcher. On macOS it never takes focus from the window you are
+  dictating into, and stays visible over other apps, full-screen apps, and Spaces.
+
 ### Changed
 
 - One `install.sh` installs, updates, and uninstalls on both Linux and macOS,
