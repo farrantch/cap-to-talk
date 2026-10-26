@@ -41,7 +41,11 @@ class StatusOverlay(QLabel):
         self.hide_timer = QTimer(self)
         self.hide_timer.setSingleShot(True)
         self.hide_timer.timeout.connect(self.hide)
-        self.macos_configured = False
+        # Configure the native window before its first show, which would
+        # otherwise activate Cap To Talk and take focus from the target window.
+        self.macos_configured = (
+            sys.platform != "darwin" or self._configure_macos_window()
+        )
 
     def show_message(self, message: str, timeout_ms: int) -> None:
         self.setText(message)
@@ -54,19 +58,24 @@ class StatusOverlay(QLabel):
             area.right() - self.width() - MARGIN, area.bottom() - self.height() - MARGIN
         )
         self.show()
-        if sys.platform == "darwin" and not self.macos_configured:
-            self.macos_configured = True
-            self._configure_macos_window()
+        if not self.macos_configured:
+            self.macos_configured = self._configure_macos_window()
         self.hide_timer.start(timeout_ms)
 
-    def _configure_macos_window(self) -> None:
-        # Qt has no flags for these: stay visible while another app is active,
-        # above full-screen apps, and on every Space.
+    def _configure_macos_window(self) -> bool:
+        # Qt has no flags for these: never activate Cap To Talk, stay visible while
+        # another app is active, and appear above full-screen apps on every Space.
         try:
             import AppKit
             import objc
 
             window = objc.objc_object(c_void_p=int(self.winId())).window()
+            if window is None:
+                return False
+            if window.isKindOfClass_(AppKit.NSPanel):
+                window.setStyleMask_(
+                    window.styleMask() | AppKit.NSWindowStyleMaskNonactivatingPanel
+                )
             window.setHidesOnDeactivate_(False)
             window.setLevel_(AppKit.NSStatusWindowLevel)
             window.setCollectionBehavior_(
@@ -78,3 +87,4 @@ class StatusOverlay(QLabel):
             LOGGER.warning(
                 "Could not configure the macOS status overlay", exc_info=True
             )
+        return True
