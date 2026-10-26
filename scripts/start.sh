@@ -43,17 +43,6 @@ printf '%s\n' "$$" >"${pid_file}"
     exit 1
 }
 
-wait_for_url() {
-    local url="$1"
-    local attempts="${2:-30}"
-    local index
-    for ((index = 1; index <= attempts; index++)); do
-        curl -fsS "${url}" >/dev/null 2>&1 && return 0
-        sleep 1
-    done
-    return 1
-}
-
 # shellcheck disable=SC2317,SC2329 # Invoked by cleanup.
 restore_keyboard() {
     [[ -n "${keyboard_state}" && -f "${keyboard_state}" ]] || return 0
@@ -76,33 +65,22 @@ trap cleanup EXIT
 trap 'exit 130' INT
 trap 'exit 143' TERM
 
-runtime_settings_output="$("${python_env}/bin/python" -c '
+# Check the selected pipeline before changing the keyboard.
+"${app_bin}" check --services-only --wait-seconds 30 || exit 1
+read -r ptt_keycode hotkey <<<"$("${python_env}/bin/python" -c '
 from cap_to_talk.config import load_settings
 settings = load_settings()
-print(settings.asr_health_url)
-print(settings.ollama_health_url)
-print(settings.ptt_keycode)
+print(settings.ptt_keycode, settings.hotkey)
 ')"
-mapfile -t runtime_settings <<<"${runtime_settings_output}"
-[[ "${#runtime_settings[@]}" -eq 3 ]] || exit 1
-asr_health_url="${runtime_settings[0]}"
-ollama_health_url="${runtime_settings[1]}"
-ptt_keycode="${runtime_settings[2]}"
-
-wait_for_url "${asr_health_url}" || {
-    echo "OpenASR is not ready. Run: ${app_bin} check" >&2
-    exit 1
-}
-if ! wait_for_url "${ollama_health_url}" 2; then
-    echo "Ollama is not ready; cleanup will fall back to raw transcripts." >&2
-fi
 
 keyboard_state="$(mktemp "${runtime_dir}/cap-to-talk-keyboard.XXXXXX.xkb")"
 xkbcomp -xkb "${DISPLAY}" "${keyboard_state}" >/dev/null 2>&1
-setxkbmap -option caps:none
-xmodmap -e 'clear Lock'
-xmodmap -e "keycode ${ptt_keycode} = NoSymbol"
-xset -r "${ptt_keycode}"
+if [[ "${hotkey:-auto}" == auto || "${hotkey}" == caps_lock ]]; then
+    setxkbmap -option caps:none
+    xmodmap -e 'clear Lock'
+    xmodmap -e "keycode ${ptt_keycode} = NoSymbol"
+fi
+# The X11 adapter disables repeat for its selected key and restores it on exit.
 
 "${status_bin}" >>"${state_dir}/status.log" 2>&1 &
 status_pid="$!"

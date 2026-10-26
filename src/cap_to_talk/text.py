@@ -1,4 +1,4 @@
-"""Text cleanup used immediately before X11 insertion."""
+"""Text cleanup used immediately before desktop insertion."""
 
 from __future__ import annotations
 

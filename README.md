@@ -1,33 +1,88 @@
 <div align="center">
   <img src="docs/assets/icon-wide.png" alt="Cap To Talk logo" width="360">
   <h1>Cap To Talk</h1>
-  <p><strong>Push-to-talk dictation for Linux/X11, powered by local AI.<strong></p>
+  <p><strong>Push-to-talk dictation, local by default.</strong></p>
 
   [![CI](https://github.com/farrantch/cap-to-talk/actions/workflows/ci.yml/badge.svg)](https://github.com/farrantch/cap-to-talk/actions/workflows/ci.yml)
   [![Latest release](https://img.shields.io/github/v/release/farrantch/cap-to-talk)](https://github.com/farrantch/cap-to-talk/releases/latest)
   [![License: MIT](https://img.shields.io/badge/license-MIT-31c3e0.svg)](LICENSE)
-  ![Platform: Linux/X11](https://img.shields.io/badge/platform-Linux%2FX11-ff6b5f.svg)
+  ![Platforms: Linux/X11, macOS](https://img.shields.io/badge/platform-Linux%2FX11%20%7C%20macOS-ff6b5f.svg)
 </div>
 
 ![Cap To Talk recording, transcription, cleanup, and insertion demo](docs/assets/demo.gif)
 
-Cap To Talk turns Caps Lock into a system-wide dictation key. It records while
+Cap To Talk turns a keyboard shortcut into a system-wide dictation key. It records while
 the key is held, transcribes with [OpenASR](https://github.com/QuintinShaw/openasr),
 optionally cleans up the wording with [Ollama](https://ollama.com/), and inserts
 the result into the window where you started speaking. The default setup runs
-entirely on your machine and needs no cloud API key.
+entirely on your machine and needs no cloud API key. You can independently select
+OpenAI or compatible services for transcription, and Ollama, OpenAI, compatible
+services, or Anthropic for cleanup. You can also choose one audio-capable model
+that transcribes and cleans up in a single request, or disable cleanup.
 
-## Requirements
+## Platforms
+
+| Platform | Default shortcut | Status |
+| --- | --- | --- |
+| Linux/X11 | Caps Lock | Installer with local models and desktop integration |
+| macOS 15+ | Caps Lock | Beta app with a one-line installer and local models |
+| Windows | Caps Lock | Experimental installer; desktop testing needed |
+
+All platforms use the same provider configuration and dictation pipeline.
+See the [desktop app guide](docs/desktop-app.md) for the settings window and
+[release guide](docs/releasing.md) for installer builds. Beta installers are
+not yet signed by Apple or Microsoft.
+
+## Desktop app preview
+
+The desktop app adds a settings window and tray/menu-bar controls for providers,
+models, credentials, microphones, and shortcuts. Install it from this checkout:
+
+```bash
+python -m pip install -e ".[desktop]"
+cap-to-talk-desktop
+```
+
+Use **Check setup** and **Test microphone** before starting dictation.
+See the [desktop guide](docs/desktop-app.md) for permissions and provider setup.
+Maintainers can create native installers using the [release workflow](docs/releasing.md).
+
+## Install on macOS
+
+Requires macOS 15 or newer, about 3.5 GB for the local models, and 8 GB RAM.
+In Terminal, run:
+
+```bash
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/farrantch/cap-to-talk/main/install-macos.sh)"
+```
+
+The installer downloads the newest release, verifies its checksum, and installs
+Cap To Talk into Applications. It also installs OpenASR and Ollama from their
+official installers if they are missing, downloads the local models, and starts
+OpenASR at login. Rerun the same command to update. Add `--skip-local-services`
+to use only cloud or existing [AI providers](docs/providers.md).
+
+Then open Cap To Talk and click **Start dictation**. Enable Cap To Talk under
+**System Settings > Privacy & Security > Accessibility** and **Input Monitoring**
+when asked, quit and reopen it, and start dictation again. Hold Caps Lock to talk;
+Cap To Talk remaps it to F18 while dictation runs and restores it when stopped.
+
+Beta builds are not signed by Apple. The installer clears the download quarantine
+flag, so Gatekeeper does not block the app. A disk image downloaded through a
+browser needs **Open Anyway** in Privacy & Security. Because each update counts
+as a new app, macOS asks for Accessibility and Input Monitoring again after updates.
+
+## Linux requirements
 
 - Ubuntu 24.04+ or a compatible Debian-based Linux distribution
 - An **X11** desktop session (native Wayland is not yet supported)
 - Python 3.12 or newer and a working microphone
-- About 3.5 GB for the default local models; 8 GB RAM is recommended
+- About 3.5 GB for the default local models; 8 GB RAM is recommended for local use
 
 Cap To Talk temporarily remaps Caps Lock while it runs and restores the prior
 keyboard layout when it exits normally.
 
-## Install
+## Install on Linux
 
 ```bash
 git clone https://github.com/farrantch/cap-to-talk.git
@@ -59,8 +114,12 @@ or `--yes` for an unattended install; flags can be combined.
 
 | Shortcut | Result |
 | --- | --- |
-| Hold **Caps Lock**, then release | Transcribe, clean up, and insert |
-| Hold **Shift + Caps Lock**, then release | Transcribe and insert without cleanup |
+| Hold the dictation key, then release | Transcribe, clean up, and insert |
+| Hold **Shift + the dictation key**, then release | Request raw transcription |
+
+The dictation key defaults to Caps Lock. Choose a function key instead
+in the desktop app or with `[input].hotkey = "f9"`. Hold Shift before
+pressing the key to select raw mode; release the keys before text is inserted.
 
 Check the setup at any time:
 
@@ -70,27 +129,53 @@ cap-to-talk check
 
 ## Personal vocabulary
 
-Edit these files with one term per line:
+Edit these files in your configuration directory with one term per line
+(the paths below show Linux defaults):
 
 - `~/.config/cap-to-talk/hotwords.txt` contains up to 128 focused recognition
-  hints sent to OpenASR.
+  hints sent to the selected transcription or audio dictation provider.
 - `~/.config/cap-to-talk/master-hotwords.txt` can hold a larger dictionary.
-  Cap To Talk selects contextually relevant spellings for the cleanup model.
+  In two-stage mode, Cap To Talk selects relevant spellings for the cleanup
+  model. Single-model dictation uses the focused recognition hints above.
 
 Blank lines and lines beginning with `#` are ignored. Restart Cap To Talk after
 editing either file.
 
 ## Configuration
 
-Edit `~/.config/cap-to-talk/config.toml` to change audio, service, output, or
-privacy settings. All available options and defaults are documented in
+Edit `config.toml` to change audio, shortcuts, providers, output, or privacy
+settings. The default locations are:
+
+| Platform | Configuration file |
+| --- | --- |
+| Linux | `~/.config/cap-to-talk/config.toml` |
+| macOS | `~/Library/Application Support/cap-to-talk/config.toml` |
+| Windows | `%APPDATA%\cap-to-talk\config.toml` |
+
+Use `--config PATH` to select another file. An explicit `XDG_CONFIG_HOME`
+overrides the platform default. All options are documented in
 [`config/config.example.toml`](config/config.example.toml).
+
+### AI providers
+
+Choose speech recognition and cleanup separately, or let one audio-capable
+model do both in a single request. Keep the default local setup, use cloud
+services, or turn cleanup off. See [AI provider configuration](docs/providers.md)
+for examples, API-key setup, custom endpoints, and connection checks.
+
+On Linux, for an installation using existing or cloud services, use
+`./install.sh --skip-local-services --no-start`, configure your providers, then
+run `./scripts/start.sh`.
 
 ## Privacy
 
-By default, audio and transcript text stay on your machine. Temporary audio is
-deleted after each request, and transcripts are not logged unless debug logging
-is enabled.
+By default, audio and transcript text stay on your machine. Audio uploads are
+prepared in memory, and transcripts are not logged unless debug logging is enabled. If you select a remote provider, audio goes to the transcription
+provider; transcript text and relevant vocabulary go to the cleanup provider.
+In single-model mode, the recording, instructions, and enabled recognition hints
+go to the selected dictation provider.
+API keys come from the selected environment variable or your system credential
+store. See [data handling](docs/providers.md#data-handling-and-failure-behavior).
 
 <details>
 <summary>Troubleshooting</summary>
@@ -101,9 +186,12 @@ Start with:
 cap-to-talk check
 ```
 
-### Caps Lock does nothing
+### The shortcut does nothing
 
-Confirm `echo "$XDG_SESSION_TYPE"` prints `x11`, then inspect
+On macOS or Windows, follow the [platform setup and permissions](docs/desktop.md#macos-and-windows-setup)
+and inspect the terminal running Cap To Talk.
+
+On Linux, confirm `echo "$XDG_SESSION_TYPE"` prints `x11`, then inspect
 `~/.local/state/cap-to-talk/cap-to-talk.log`. Another global shortcut manager
 may already own Caps Lock.
 
@@ -122,6 +210,13 @@ curl -f http://127.0.0.1:8080/health
 systemctl --user status cap-to-talk-openasr.service
 ```
 
+On macOS, check the login service and its log:
+
+```bash
+launchctl print "gui/$UID/io.github.farrantch.cap-to-talk.openasr" | head
+tail ~/Library/Logs/cap-to-talk/openasr.log
+```
+
 ### Cleanup fails or raw text is inserted
 
 ```bash
@@ -129,11 +224,25 @@ curl -f http://127.0.0.1:11434/api/tags
 ollama list
 ```
 
-Cap To Talk uses the raw transcript when cleanup is unavailable.
+In two-stage mode, Cap To Talk uses the raw transcript when cleanup is
+unavailable. Single-model mode has no separate raw transcript to fall back to;
+a provider failure inserts nothing. Use `cap-to-talk check --services-only` to
+check the active provider configuration.
 
 </details>
 
 ## Uninstall
+
+On macOS, run the installer with `--uninstall`:
+
+```bash
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/farrantch/cap-to-talk/main/install-macos.sh)" -- --uninstall
+```
+
+It removes the app and the OpenASR login service. Settings, saved keys, models,
+OpenASR, and Ollama are kept.
+
+On Linux:
 
 ```bash
 ./uninstall.sh
@@ -170,7 +279,9 @@ on-demand use.
 
 ## Contributing
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for development setup. Report security
+See [CONTRIBUTING.md](CONTRIBUTING.md) for development setup and
+[Desktop integrations](docs/desktop.md) for platform setup, adapter behavior, and
+manual validation. Report security
 issues privately as described in [SECURITY.md](SECURITY.md).
 
 ## Acknowledgments

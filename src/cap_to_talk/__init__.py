@@ -1,3 +1,3 @@
-"""Cap To Talk: local push-to-talk dictation for Linux/X11."""
+"""Cap To Talk: push-to-talk dictation with configurable providers."""
 
-__version__ = "0.2.0"
+__version__ = "0.3.0b1"
