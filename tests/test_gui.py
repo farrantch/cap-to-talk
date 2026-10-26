@@ -208,3 +208,14 @@ def test_dictation_messages_reach_the_window_and_overlay(application):
 
     assert statuses == ["✓ Dictated"]
     assert overlays == [("✓ Dictated", 800)]
+
+
+def test_overlay_draws_its_background(window, application):
+    window.overlay.show_message("✓ Dictated", 60_000)
+    image = window.overlay.grab().toImage()
+    padding = image.pixelColor(4, image.height() // 2)
+
+    assert abs(padding.red() - 32) <= 2
+    assert abs(padding.green() - 36) <= 2
+    assert abs(padding.blue() - 40) <= 2
+    assert padding.alpha() >= 230

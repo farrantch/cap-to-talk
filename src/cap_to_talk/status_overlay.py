@@ -6,11 +6,12 @@ import logging
 import sys
 
 from PySide6.QtCore import Qt, QTimer
-from PySide6.QtGui import QCursor, QGuiApplication
+from PySide6.QtGui import QColor, QCursor, QGuiApplication, QPainter, QPaintEvent
 from PySide6.QtWidgets import QLabel
 
 LOGGER = logging.getLogger(__name__)
 MARGIN = 20
+BACKGROUND = QColor(32, 36, 40, 235)
 
 
 class StatusOverlay(QLabel):
@@ -35,8 +36,7 @@ class StatusOverlay(QLabel):
         ):
             self.setAttribute(attribute)
         self.setStyleSheet(
-            "QLabel { background: rgba(32, 36, 40, 230); color: white;"
-            " border-radius: 8px; padding: 8px 14px; font-size: 14px; }"
+            "QLabel { color: white; padding: 8px 14px; font-size: 14px; }"
         )
         self.hide_timer = QTimer(self)
         self.hide_timer.setSingleShot(True)
@@ -46,6 +46,16 @@ class StatusOverlay(QLabel):
         self.macos_configured = (
             sys.platform != "darwin" or self._configure_macos_window()
         )
+
+    def paintEvent(self, event: QPaintEvent) -> None:
+        # Style-sheet backgrounds are not drawn on translucent macOS windows.
+        painter = QPainter(self)
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+        painter.setPen(Qt.PenStyle.NoPen)
+        painter.setBrush(BACKGROUND)
+        painter.drawRoundedRect(self.rect(), 8, 8)
+        painter.end()
+        super().paintEvent(event)
 
     def show_message(self, message: str, timeout_ms: int) -> None:
         self.setText(message)
