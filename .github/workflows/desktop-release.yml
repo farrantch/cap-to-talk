@@ -66,7 +66,6 @@ jobs:
       - run: >-
           python -m pytest
           --ignore=tests/test_install.py
-          --ignore=tests/test_install_user.py
           --ignore=tests/test_start.py
       - run: pip-audit
       - name: Build desktop application
@@ -131,11 +130,11 @@ jobs:
       - name: Test the Mac installer
         if: runner.os == 'macOS'
         run: |
-          ./install-macos.sh --yes --no-start --skip-local-services \
+          ./install.sh --yes --no-start --skip-local-services \
             --dmg dist/installers/*.dmg
           test -x "/Applications/Cap To Talk.app/Contents/MacOS/CapToTalk"
           test -s "$HOME/Library/Application Support/cap-to-talk/hotwords.txt"
-          ./install-macos.sh --yes --uninstall
+          ./install.sh --yes --uninstall
           test ! -e "/Applications/Cap To Talk.app"
       - name: Generate checksums
         run: python packaging/build_desktop.py checksums

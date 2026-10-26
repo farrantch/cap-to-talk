@@ -13,7 +13,7 @@ On macOS 15+, run this in Terminal to install the app, OpenASR, Ollama, and the
 local models:
 
 ```bash
-/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/farrantch/cap-to-talk/main/install-macos.sh)"
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/farrantch/cap-to-talk/main/install.sh)"
 ```
 
 Open Cap To Talk, click **Start dictation**, and enable it under Accessibility and

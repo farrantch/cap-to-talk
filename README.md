@@ -4,291 +4,93 @@
   <p><strong>Push-to-talk dictation, local by default.</strong></p>
 
   [![CI](https://github.com/farrantch/cap-to-talk/actions/workflows/ci.yml/badge.svg)](https://github.com/farrantch/cap-to-talk/actions/workflows/ci.yml)
-  [![Latest release](https://img.shields.io/github/v/release/farrantch/cap-to-talk)](https://github.com/farrantch/cap-to-talk/releases/latest)
+  [![Latest release](https://img.shields.io/github/v/release/farrantch/cap-to-talk?include_prereleases)](https://github.com/farrantch/cap-to-talk/releases)
   [![License: MIT](https://img.shields.io/badge/license-MIT-31c3e0.svg)](LICENSE)
   ![Platforms: Linux/X11, macOS](https://img.shields.io/badge/platform-Linux%2FX11%20%7C%20macOS-ff6b5f.svg)
 </div>
 
 ![Cap To Talk recording, transcription, cleanup, and insertion demo](docs/assets/demo.gif)
 
-Cap To Talk turns a keyboard shortcut into a system-wide dictation key. It records while
-the key is held, transcribes with [OpenASR](https://github.com/QuintinShaw/openasr),
-optionally cleans up the wording with [Ollama](https://ollama.com/), and inserts
-the result into the window where you started speaking. The default setup runs
-entirely on your machine and needs no cloud API key. You can independently select
-OpenAI or compatible services for transcription, and Ollama, OpenAI, compatible
-services, or Anthropic for cleanup. You can also choose one audio-capable model
-that transcribes and cleans up in a single request, or disable cleanup.
+Hold Caps Lock, speak, and let go. Cap To Talk types what you said into the
+window you were using. It transcribes with [OpenASR](https://github.com/QuintinShaw/openasr)
+and tidies the wording with [Ollama](https://ollama.com/), all on your machine.
+Cloud providers such as OpenAI and Anthropic are optional.
 
-## Platforms
+## Install
 
-| Platform | Default shortcut | Status |
-| --- | --- | --- |
-| Linux/X11 | Caps Lock | Installer with local models and desktop integration |
-| macOS 15+ | Caps Lock | Beta app with a one-line installer and local models |
-| Windows | Caps Lock | Experimental installer; desktop testing needed |
-
-All platforms use the same provider configuration and dictation pipeline.
-See the [desktop app guide](docs/desktop-app.md) for the settings window and
-[release guide](docs/releasing.md) for installer builds. Beta installers are
-not yet signed by Apple or Microsoft.
-
-## Desktop app preview
-
-The desktop app adds a settings window and tray/menu-bar controls for providers,
-models, credentials, microphones, and shortcuts. Install it from this checkout:
+On Linux (X11) or macOS 15+, run:
 
 ```bash
-python -m pip install -e ".[desktop]"
-cap-to-talk-desktop
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/farrantch/cap-to-talk/main/install.sh)"
 ```
 
-Use **Check setup** and **Test microphone** before starting dictation.
-See the [desktop guide](docs/desktop-app.md) for permissions and provider setup.
-Maintainers can create native installers using the [release workflow](docs/releasing.md).
+This installs Cap To Talk, OpenASR, Ollama, and about 3.5 GB of local models;
+8 GB of RAM is recommended. Run it again to update. To pass options, add them
+after `--`, for example `... install.sh)" -- --autostart`:
 
-## Install on macOS
-
-Requires macOS 15 or newer, about 3.5 GB for the local models, and 8 GB RAM.
-In Terminal, run:
-
-```bash
-/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/farrantch/cap-to-talk/main/install-macos.sh)"
-```
-
-The installer downloads the newest release, verifies its checksum, and installs
-Cap To Talk into Applications. It also installs OpenASR and Ollama from their
-official installers if they are missing, downloads the local models, and starts
-OpenASR at login. Rerun the same command to update. Add `--skip-local-services`
-to use only cloud or existing [AI providers](docs/providers.md).
-
-Then open Cap To Talk and click **Start dictation**. Enable Cap To Talk under
-**System Settings > Privacy & Security > Accessibility** and **Input Monitoring**
-when asked, quit and reopen it, and start dictation again. Hold Caps Lock to talk;
-Cap To Talk remaps it to F18 while dictation runs and restores it when stopped.
-
-Beta builds are not signed by Apple. The installer clears the download quarantine
-flag, so Gatekeeper does not block the app. A disk image downloaded through a
-browser needs **Open Anyway** in Privacy & Security. Because each update counts
-as a new app, macOS asks for Accessibility and Input Monitoring again after updates.
-
-## Linux requirements
-
-- Ubuntu 24.04+ or a compatible Debian-based Linux distribution
-- An **X11** desktop session (native Wayland is not yet supported)
-- Python 3.12 or newer and a working microphone
-- About 3.5 GB for the default local models; 8 GB RAM is recommended for local use
-
-Cap To Talk temporarily remaps Caps Lock while it runs and restores the prior
-keyboard layout when it exits normally.
-
-## Install on Linux
-
-```bash
-git clone https://github.com/farrantch/cap-to-talk.git
-cd cap-to-talk
-```
-
-### On demand (default)
-
-```bash
-./install.sh
-```
-
-Cap To Talk starts after installation. After a later login, start it from the
-checkout with `./scripts/start.sh`.
-
-### Start at login
-
-```bash
-./install.sh --autostart
-```
-
-Cap To Talk starts after installation and automatically at future desktop logins.
-
-Both methods install the required packages and local models while preserving
-existing settings. Add `--no-start` to leave Cap To Talk stopped after installation
-or `--yes` for an unattended install; flags can be combined.
-
-## Use it
-
-| Shortcut | Result |
+| Option | Effect |
 | --- | --- |
-| Hold the dictation key, then release | Transcribe, clean up, and insert |
-| Hold **Shift + the dictation key**, then release | Request raw transcription |
+| `--autostart` | Linux: start Cap To Talk at login |
+| `--skip-local-services` | Skip the local models and use [other providers](docs/providers.md) |
+| `--uninstall` | Remove Cap To Talk; add `--purge` to delete settings too |
 
-The dictation key defaults to Caps Lock. Choose a function key instead
-in the desktop app or with `[input].hotkey = "f9"`. Hold Shift before
-pressing the key to select raw mode; release the keys before text is inserted.
+After installing:
 
-Check the setup at any time:
+- **Linux:** Cap To Talk starts right away. Later, open it from your applications
+  menu. It needs an X11 session (not Wayland) on Ubuntu 24.04+ or a similar distribution.
+- **macOS:** Open Cap To Talk and click **Start dictation**. Enable it under
+  **System Settings > Privacy & Security > Accessibility** and **Input Monitoring**,
+  then quit and reopen it and start dictation again. Beta builds are not signed
+  by Apple, so macOS asks for these permissions again after each update.
+- **Windows (experimental):** download the installer from
+  [Releases](https://github.com/farrantch/cap-to-talk/releases) and choose
+  providers in its settings window.
 
-```bash
-cap-to-talk check
-```
+## Use
 
-## Personal vocabulary
+| Hold, then release | Result |
+| --- | --- |
+| Caps Lock | Transcribe, clean up, and type the text |
+| Shift + Caps Lock | Type the raw transcription |
 
-Edit these files in your configuration directory with one term per line
-(the paths below show Linux defaults):
-
-- `~/.config/cap-to-talk/hotwords.txt` contains up to 128 focused recognition
-  hints sent to the selected transcription or audio dictation provider.
-- `~/.config/cap-to-talk/master-hotwords.txt` can hold a larger dictionary.
-  In two-stage mode, Cap To Talk selects relevant spellings for the cleanup
-  model. Single-model dictation uses the focused recognition hints above.
-
-Blank lines and lines beginning with `#` are ignored. Restart Cap To Talk after
-editing either file.
+Cap To Talk remaps Caps Lock while it runs and restores it when it stops. To use
+a function key instead, set `[input].hotkey = "f9"` or pick one in the desktop app.
 
 ## Configuration
 
-Edit `config.toml` to change audio, shortcuts, providers, output, or privacy
-settings. The default locations are:
-
-| Platform | Configuration file |
+| Platform | Settings folder |
 | --- | --- |
-| Linux | `~/.config/cap-to-talk/config.toml` |
-| macOS | `~/Library/Application Support/cap-to-talk/config.toml` |
-| Windows | `%APPDATA%\cap-to-talk\config.toml` |
+| Linux | `~/.config/cap-to-talk/` |
+| macOS | `~/Library/Application Support/cap-to-talk/` |
+| Windows | `%APPDATA%\cap-to-talk\` |
 
-Use `--config PATH` to select another file. An explicit `XDG_CONFIG_HOME`
-overrides the platform default. All options are documented in
-[`config/config.example.toml`](config/config.example.toml).
-
-### AI providers
-
-Choose speech recognition and cleanup separately, or let one audio-capable
-model do both in a single request. Keep the default local setup, use cloud
-services, or turn cleanup off. See [AI provider configuration](docs/providers.md)
-for examples, API-key setup, custom endpoints, and connection checks.
-
-On Linux, for an installation using existing or cloud services, use
-`./install.sh --skip-local-services --no-start`, configure your providers, then
-run `./scripts/start.sh`.
+- `config.toml` holds the audio, shortcut, provider, and privacy settings. Every
+  option is described in [`config.example.toml`](config/config.example.toml).
+- `hotwords.txt` lists up to 128 names and terms that help recognition.
+  `master-hotwords.txt` is a larger spelling list for cleanup. Put one term per
+  line and restart Cap To Talk after editing.
+- [AI providers](docs/providers.md) covers cloud services, API keys, and custom endpoints.
 
 ## Privacy
 
-By default, audio and transcript text stay on your machine. Audio uploads are
-prepared in memory, and transcripts are not logged unless debug logging is enabled. If you select a remote provider, audio goes to the transcription
-provider; transcript text and relevant vocabulary go to the cleanup provider.
-In single-model mode, the recording, instructions, and enabled recognition hints
-go to the selected dictation provider.
-API keys come from the selected environment variable or your system credential
-store. See [data handling](docs/providers.md#data-handling-and-failure-behavior).
+With the local setup, audio and text stay on your machine. Recordings are kept
+in memory, and transcripts are not logged unless debug logging is on. A cloud
+provider you choose receives your audio or transcript; see
+[data handling](docs/providers.md#data-handling-and-failure-behavior).
 
-<details>
-<summary>Troubleshooting</summary>
+## Troubleshooting
 
-Start with:
-
-```bash
-cap-to-talk check
-```
-
-### The shortcut does nothing
-
-On macOS or Windows, follow the [platform setup and permissions](docs/desktop.md#macos-and-windows-setup)
-and inspect the terminal running Cap To Talk.
-
-On Linux, confirm `echo "$XDG_SESSION_TYPE"` prints `x11`, then inspect
-`~/.local/state/cap-to-talk/cap-to-talk.log`. Another global shortcut manager
-may already own Caps Lock.
-
-### The microphone is unavailable
-
-```bash
-.venv/bin/python -c 'import sounddevice; print(sounddevice.query_devices())'
-```
-
-Confirm the desktop session has microphone access and a default input device.
-
-### Transcription fails
-
-```bash
-curl -f http://127.0.0.1:8080/health
-systemctl --user status cap-to-talk-openasr.service
-```
-
-On macOS, check the login service and its log:
-
-```bash
-launchctl print "gui/$UID/io.github.farrantch.cap-to-talk.openasr" | head
-tail ~/Library/Logs/cap-to-talk/openasr.log
-```
-
-### Cleanup fails or raw text is inserted
-
-```bash
-curl -f http://127.0.0.1:11434/api/tags
-ollama list
-```
-
-In two-stage mode, Cap To Talk uses the raw transcript when cleanup is
-unavailable. Single-model mode has no separate raw transcript to fall back to;
-a provider failure inserts nothing. Use `cap-to-talk check --services-only` to
-check the active provider configuration.
-
-</details>
-
-## Uninstall
-
-On macOS, run the installer with `--uninstall`:
-
-```bash
-/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/farrantch/cap-to-talk/main/install-macos.sh)" -- --uninstall
-```
-
-It removes the app and the OpenASR login service. Settings, saved keys, models,
-OpenASR, and Ollama are kept.
-
-On Linux:
-
-```bash
-./uninstall.sh
-```
-
-Personal settings and logs are preserved. Use `./uninstall.sh --purge` to remove
-them too. Shared OpenASR and Ollama installations are left alone.
-
-<details>
-<summary>Manual setup and non-Debian distributions</summary>
-
-Install equivalents for `curl`, `libnotify`, PortAudio, Tk, Python venv,
-`util-linux`, `setxkbmap`, `xkbcomp`, `xdotool`, and `xprintidle`. Install
-OpenASR and Ollama using their official instructions, then prepare the models:
-
-```bash
-openasr pull qwen3-asr-0.6b:q8
-ollama pull qwen3:4b-instruct
-```
-
-Start OpenASR on `127.0.0.1:8080`, ensure Ollama is running, and finish the
-user-local setup:
-
-```bash
-./scripts/install-user.sh
-./scripts/start.sh
-```
-
-Pass `--autostart` to `install-user.sh` if Cap To Talk should start automatically
-at desktop login. Without that flag, the setup is idempotently configured for
-on-demand use.
-
-</details>
+Run `cap-to-talk check` on Linux, or click **Check setup** in the desktop app.
+Logs are in `~/.local/state/cap-to-talk/` on Linux; OpenASR's macOS log is
+`~/Library/Logs/cap-to-talk/openasr.log`. See
+[desktop integrations](docs/desktop.md) for platform details.
 
 ## Contributing
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for development setup and
-[Desktop integrations](docs/desktop.md) for platform setup, adapter behavior, and
-manual validation. Report security
+See [CONTRIBUTING.md](CONTRIBUTING.md) for development setup. Report security
 issues privately as described in [SECURITY.md](SECURITY.md).
 
-## Acknowledgments
-
 Cap To Talk builds on [OpenASR](https://github.com/QuintinShaw/openasr),
-[Ollama](https://ollama.com/), and the Qwen speech and language models. Review
-their repositories and model pages for their respective licenses and usage
-terms.
-
-Released under the [MIT License](LICENSE).
+[Ollama](https://ollama.com/), and the Qwen speech and language models; review
+their licenses and usage terms. Cap To Talk itself is released under the
+[MIT License](LICENSE).

@@ -3,8 +3,8 @@
 Cap To Talk has adapters for Linux/X11, Windows, and macOS. The Windows and macOS
 adapters are experimental: their behavior is covered by simulated tests, but
 recording, permissions, and insertion still need validation on real desktops.
-The Linux and [macOS installers](../README.md#install-on-macos) set up the app
-and local models; this page covers running from a source checkout.
+The [installer](../README.md#install) sets up the app and local models on Linux
+and macOS; this page covers running from a source checkout.
 
 ## macOS and Windows setup
 

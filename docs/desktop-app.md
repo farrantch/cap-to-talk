@@ -2,7 +2,7 @@
 
 The settings app ships in the beta installers on the
 [releases page](https://github.com/farrantch/cap-to-talk/releases). On macOS,
-use the [one-line installer](../README.md#install-on-macos), which also sets up
+use the [one-line installer](../README.md#install), which also sets up
 the local models. The installers are not yet signed by Apple or Microsoft.
 Maintainers can generate test downloads with the [desktop build workflow](releasing.md).
 

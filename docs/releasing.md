@@ -54,7 +54,7 @@ testers who understand OS installation prompts. They do not create a GitHub rele
 Selecting **signed** requires every Mac and Windows signing credential and fails
 if any is missing.
 
-Mac builds also install the disk image with `install-macos.sh --skip-local-services`
+Mac builds also install the disk image with `install.sh --skip-local-services`
 and uninstall it again. The installer's local-model setup is not run in CI.
 
 ## macOS signing and notarization
@@ -124,7 +124,7 @@ receive SmartScreen prompts while reputation develops; see
    creates a **draft prerelease** with all four installers, combined checksums,
    and the release notes.
 6. Review the draft downloads and testing results, then publish the prerelease.
-   `install-macos.sh` installs the newest published release, including prereleases.
+   On macOS, `install.sh` installs the newest published release, including prereleases.
 
 All packages use checksums; signed Mac and Windows packages additionally use
 platform signing. A failed platform, invalid checksum, or signing failure prevents
