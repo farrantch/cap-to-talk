@@ -71,7 +71,6 @@ jobs:
       - run: >-
           python -m pytest
           --ignore=tests/test_install.py
-          --ignore=tests/test_install_user.py
           --ignore=tests/test_start.py
 
   shell:
@@ -80,5 +79,5 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       - run: sudo apt-get update && sudo apt-get install --yes shellcheck
-      - run: bash -n install.sh install-macos.sh uninstall.sh scripts/*.sh
-      - run: shellcheck install.sh install-macos.sh uninstall.sh scripts/*.sh
+      - run: bash -n install.sh scripts/*.sh
+      - run: shellcheck install.sh scripts/*.sh

@@ -32,17 +32,17 @@ executables under `.venv\Scripts\`. Install the same `.[dev,desktop]` extras. Ru
 the portable tests with:
 
 ```powershell
-.\.venv\Scripts\python.exe -m pytest --ignore=tests/test_install.py --ignore=tests/test_install_user.py --ignore=tests/test_start.py
+.\.venv\Scripts\python.exe -m pytest --ignore=tests/test_install.py --ignore=tests/test_start.py
 ```
 
-Use that test selection on macOS too; the omitted tests exercise Linux shell
-installers and startup. Native SDK smoke tests run only on their target OS.
+Use that test selection on macOS too; the omitted tests exercise the Linux
+installer and startup. Native SDK smoke tests run only on their target OS.
 
 Check shell changes on Linux too:
 
 ```bash
-bash -n install.sh uninstall.sh scripts/*.sh
-shellcheck install.sh uninstall.sh scripts/*.sh
+bash -n install.sh scripts/*.sh
+shellcheck install.sh scripts/*.sh
 ```
 
 ## Desktop builds

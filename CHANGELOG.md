@@ -5,6 +5,16 @@ All notable changes to Cap To Talk are documented here. This project follows
 
 ## [Unreleased]
 
+### Changed
+
+- One `install.sh` installs, updates, and uninstalls on both Linux and macOS,
+  run with the same curl command. It replaces `install-macos.sh`, `uninstall.sh`,
+  and `scripts/install-user.sh`; uninstall is now `install.sh --uninstall`.
+- Run from a download on Linux, the installer keeps its copy in
+  `~/.local/share/cap-to-talk`. Linux installs add an applications-menu launcher.
+- The installer no longer migrates Caps Talk-era files, commands, and services.
+- Simplified the README.
+
 ## [0.3.0b1] - 2026-10-26
 
 ### Added

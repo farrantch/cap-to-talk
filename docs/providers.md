@@ -249,8 +249,9 @@ services without downloading OpenASR, Ollama, or their models:
 ./install.sh --skip-local-services --no-start
 # Edit ~/.config/cap-to-talk/config.toml and configure the launch environment.
 cap-to-talk check --services-only
-./scripts/start.sh
 ```
+
+Then start Cap To Talk from your applications menu or with `./scripts/start.sh`.
 
 The startup script checks the active pipeline. Missing local services do
 not prevent a cloud configuration from starting. In two-stage mode, an
