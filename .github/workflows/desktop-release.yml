@@ -40,7 +40,8 @@ jobs:
             label: macos-x86_64
     env:
       QT_QPA_PLATFORM: offscreen
-      REQUIRE_SIGNING: ${{ github.event_name == 'push' || inputs.signed }}
+      # Manual signed runs require every credential; tags sign what is configured.
+      REQUIRE_SIGNING: ${{ inputs.signed == true }}
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-python@v7
@@ -74,14 +75,14 @@ jobs:
           MACOS_CODESIGN_IDENTITY: ${{ (github.event_name == 'push' || inputs.signed) && secrets.MACOS_CODESIGN_IDENTITY || '' }}
         run: python packaging/build_desktop.py bundle
       - name: Azure sign-in
-        if: runner.os == 'Windows' && (github.event_name == 'push' || inputs.signed)
+        if: runner.os == 'Windows' && (inputs.signed || (github.event_name == 'push' && vars.AZURE_SIGNING_ACCOUNT != ''))
         uses: azure/login@v3
         with:
           client-id: ${{ secrets.AZURE_CLIENT_ID }}
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
       - name: Sign Windows application
-        if: runner.os == 'Windows' && (github.event_name == 'push' || inputs.signed)
+        if: runner.os == 'Windows' && (inputs.signed || (github.event_name == 'push' && vars.AZURE_SIGNING_ACCOUNT != ''))
         uses: azure/artifact-signing-action@v2
         with:
           endpoint: ${{ vars.AZURE_SIGNING_ENDPOINT }}
@@ -106,7 +107,7 @@ jobs:
           MACOS_NOTARY_ISSUER: ${{ (github.event_name == 'push' || inputs.signed) && secrets.MACOS_NOTARY_ISSUER || '' }}
         run: python packaging/build_desktop.py package
       - name: Sign Windows installer
-        if: runner.os == 'Windows' && (github.event_name == 'push' || inputs.signed)
+        if: runner.os == 'Windows' && (inputs.signed || (github.event_name == 'push' && vars.AZURE_SIGNING_ACCOUNT != ''))
         uses: azure/artifact-signing-action@v2
         with:
           endpoint: ${{ vars.AZURE_SIGNING_ENDPOINT }}
@@ -118,7 +119,7 @@ jobs:
           timestamp-rfc3161: http://timestamp.acs.microsoft.com
           timestamp-digest: SHA256
       - name: Verify Windows signatures
-        if: runner.os == 'Windows' && (github.event_name == 'push' || inputs.signed)
+        if: runner.os == 'Windows' && (inputs.signed || (github.event_name == 'push' && vars.AZURE_SIGNING_ACCOUNT != ''))
         shell: pwsh
         run: |
           Get-ChildItem 'dist/CapToTalk/CapToTalk.exe', 'dist/installers/*.exe' | ForEach-Object {
@@ -126,6 +127,15 @@ jobs:
               throw "Invalid signature: $($_.Name)"
             }
           }
+      - name: Test the Mac installer
+        if: runner.os == 'macOS'
+        run: |
+          ./install-macos.sh --yes --no-start --skip-local-services \
+            --dmg dist/installers/*.dmg
+          test -x "/Applications/Cap To Talk.app/Contents/MacOS/CapToTalk"
+          test -s "$HOME/Library/Application Support/cap-to-talk/hotwords.txt"
+          ./install-macos.sh --yes --uninstall
+          test ! -e "/Applications/Cap To Talk.app"
       - name: Generate checksums
         run: python packaging/build_desktop.py checksums
       - uses: actions/upload-artifact@v7

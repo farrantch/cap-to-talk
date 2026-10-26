@@ -255,10 +255,8 @@ class SettingsWindow(QMainWindow):
             self.microphone.setCurrentIndex(1)
         self.hotkey = QComboBox()
         for key in ("auto", "caps_lock", *(f"f{i}" for i in range(1, 13))):
-            if sys.platform == "darwin" and key == "caps_lock":
-                continue
             label = {
-                "auto": "Default (F8 on Mac, Caps Lock on Windows/Linux)",
+                "auto": "Default (Caps Lock)",
                 "caps_lock": "Caps Lock",
             }.get(key, key.upper())
             self.hotkey.addItem(label, key)
@@ -272,10 +270,11 @@ class SettingsWindow(QMainWindow):
         help_text = QLabel(
             "Hold the dictation key to record, then release it to insert text.\n"
             "Hold Shift before pressing the key to request raw transcription.\n\n"
-            "On Mac, allow Microphone, Accessibility, and Input Monitoring access. "
-            "Your keyboard may need Fn + F8.\n\n"
-            "Local providers must be installed separately. A remote provider receives "
-            "your audio or transcript and may charge for usage."
+            "On Mac, allow Microphone, Accessibility, and Input Monitoring access, "
+            "then reopen Cap To Talk.\n\n"
+            "The Mac and Linux installers set up the local providers; on Windows, "
+            "install them separately. A remote provider receives your audio or "
+            "transcript and may charge for usage."
         )
         help_text.setWordWrap(True)
         general.addWidget(help_text)

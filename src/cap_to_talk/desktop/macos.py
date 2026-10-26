@@ -2,9 +2,13 @@
 
 from __future__ import annotations
 
+import json
+import re
+import subprocess
 import threading
 import time
-from collections.abc import Callable
+from collections.abc import Callable, Iterator
+from contextlib import contextmanager, nullcontext
 from dataclasses import dataclass
 from typing import Any
 
@@ -12,7 +16,13 @@ from cap_to_talk.desktop.base import DesktopCheck, DesktopUnavailableError
 from cap_to_talk.desktop.native import NativeDesktop
 
 EVENT_TAG = 0x43415454
+HIDUTIL = "/usr/bin/hidutil"
+CAPS_LOCK_USAGE = 0x700000039
+F18_USAGE = 0x70000006D
+CAPS_LOCK_REMAP = (CAPS_LOCK_USAGE, F18_USAGE)
 KEY_CODES = {
+    # Caps Lock only reports toggles, so it is remapped to F18 while listening.
+    "caps_lock": 79,
     "f1": 122,
     "f2": 120,
     "f3": 99,
@@ -26,6 +36,54 @@ KEY_CODES = {
     "f11": 103,
     "f12": 111,
 }
+
+
+def _key_mappings() -> list[tuple[int, int]]:
+    output = subprocess.run(
+        [HIDUTIL, "property", "--get", "UserKeyMapping"],
+        check=True,
+        capture_output=True,
+        text=True,
+        timeout=5,
+    ).stdout
+    mappings = []
+    for block in re.findall(r"\{([^}]*)\}", output):
+        source = re.search(r"HIDKeyboardModifierMappingSrc\s*=\s*(\d+)", block)
+        destination = re.search(r"HIDKeyboardModifierMappingDst\s*=\s*(\d+)", block)
+        if source and destination:
+            mappings.append((int(source.group(1)), int(destination.group(1))))
+    return mappings
+
+
+def _set_key_mappings(mappings: list[tuple[int, int]]) -> None:
+    value = [
+        {"HIDKeyboardModifierMappingSrc": source, "HIDKeyboardModifierMappingDst": dest}
+        for source, dest in mappings
+    ]
+    subprocess.run(
+        [HIDUTIL, "property", "--set", json.dumps({"UserKeyMapping": value})],
+        check=True,
+        capture_output=True,
+        timeout=5,
+    )
+
+
+@contextmanager
+def caps_lock_as_f18() -> Iterator[None]:
+    try:
+        # Drop a remap left by a crash so it is not restored as the user's own.
+        saved = [item for item in _key_mappings() if item != CAPS_LOCK_REMAP]
+        _set_key_mappings(
+            [item for item in saved if item[0] != CAPS_LOCK_USAGE] + [CAPS_LOCK_REMAP]
+        )
+    except (OSError, subprocess.SubprocessError) as error:
+        raise DesktopUnavailableError(
+            "Could not prepare Caps Lock. Choose a function key in Settings."
+        ) from error
+    try:
+        yield
+    finally:
+        _set_key_mappings(saved)
 
 
 @dataclass(frozen=True)
@@ -51,6 +109,15 @@ class MacOSAPI:
         self.quartz = Quartz
         self.objc = objc
 
+    def request_permissions(self) -> None:
+        """Show the prompts that add this app to the privacy settings lists."""
+        if not self.ax.AXIsProcessTrusted():
+            self.ax.AXIsProcessTrustedWithOptions(
+                {self.ax.kAXTrustedCheckOptionPrompt: True}
+            )
+        if not self.quartz.CGPreflightListenEventAccess():
+            self.quartz.CGRequestListenEventAccess()
+
     def check(self, hotkey: str) -> list[DesktopCheck]:
         mic = self.av.AVCaptureDevice.authorizationStatusForMediaType_(
             self.av.AVMediaTypeAudio
@@ -64,7 +131,7 @@ class MacOSAPI:
                 "granted"
                 if trusted
                 else (
-                    "enable the terminal or app in System Settings > "
+                    "enable Cap To Talk (or your terminal) in System Settings > "
                     "Privacy & Security > Accessibility"
                 ),
             ),
@@ -74,8 +141,8 @@ class MacOSAPI:
                 "granted"
                 if monitoring
                 else (
-                    "enable the terminal or app in System Settings > "
-                    "Privacy & Security > Input Monitoring"
+                    "enable Cap To Talk (or your terminal) in System Settings > "
+                    "Privacy & Security > Input Monitoring, then reopen it"
                 ),
             ),
             DesktopCheck(
@@ -97,10 +164,7 @@ class MacOSAPI:
                 hotkey in KEY_CODES,
                 hotkey
                 if hotkey in KEY_CODES
-                else (
-                    "macOS hold-to-talk requires f1 through f12; "
-                    "Caps Lock does not report a reliable release"
-                ),
+                else "macOS hold-to-talk requires caps_lock or f1 through f12",
             ),
         ]
 
@@ -205,6 +269,15 @@ class MacOSAPI:
         q = self.quartz
         key = KEY_CODES[hotkey]
         failures: list[Exception] = []
+        remap = nullcontext()
+        if hotkey == "caps_lock":
+            flags = q.CGEventSourceFlagsState(q.kCGEventSourceStateHIDSystemState)
+            # Once remapped, Caps Lock could not be switched off until dictation stops.
+            if flags & q.kCGEventFlagMaskAlphaShift:
+                raise DesktopUnavailableError(
+                    "Turn off Caps Lock, then start dictation again."
+                )
+            remap = caps_lock_as_f18()
 
         def callback(proxy: Any, event_type: int, event: Any, refcon: Any) -> Any:
             try:
@@ -212,9 +285,9 @@ class MacOSAPI:
                     q.kCGEventTapDisabledByTimeout,
                     q.kCGEventTapDisabledByUserInput,
                 ):
-                    raise DesktopUnavailableError(
-                        "macOS disabled the dictation shortcut listener."
-                    )
+                    # macOS disables a tap that responds slowly; resume listening.
+                    q.CGEventTapEnable(tap, True)
+                    return event
                 if (
                     event_type in (q.kCGEventKeyDown, q.kCGEventKeyUp)
                     and q.CGEventGetIntegerValueField(event, q.kCGKeyboardEventKeycode)
@@ -257,9 +330,10 @@ class MacOSAPI:
                     )
                 q.CFRunLoopAddSource(loop, source, q.kCFRunLoopDefaultMode)
                 q.CGEventTapEnable(tap, True)
-                ready()
-                while not stopped.is_set():
-                    q.CFRunLoopRunInMode(q.kCFRunLoopDefaultMode, 0.1, False)
+                with remap:
+                    ready()
+                    while not stopped.is_set():
+                        q.CFRunLoopRunInMode(q.kCFRunLoopDefaultMode, 0.1, False)
                 if failures:
                     raise failures[0]
             finally:
@@ -277,7 +351,19 @@ class MacOSAPI:
 
 class MacOSDesktop(NativeDesktop):
     platform_name = "macOS"
-    default_hotkey = "f8"
+    default_hotkey = "caps_lock"
 
     def _load_api(self) -> MacOSAPI:
         return MacOSAPI()
+
+    def run_hotkey_loop(
+        self,
+        *,
+        on_press: Callable[[bool], None],
+        on_release: Callable[[], None],
+        on_ready: Callable[[], None],
+    ) -> None:
+        self.api.request_permissions()
+        super().run_hotkey_loop(
+            on_press=on_press, on_release=on_release, on_ready=on_ready
+        )

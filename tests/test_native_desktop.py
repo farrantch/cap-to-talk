@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import ctypes
+import json
 import sys
 import threading
 from contextlib import nullcontext
@@ -10,6 +11,7 @@ from unittest.mock import Mock, call
 import pytest
 
 from cap_to_talk.config import Settings
+from cap_to_talk.desktop import macos as mac_module
 from cap_to_talk.desktop.base import DesktopUnavailableError
 from cap_to_talk.desktop.macos import EVENT_TAG as MAC_EVENT_TAG
 from cap_to_talk.desktop.macos import MacOSAPI, MacOSDesktop, MacOSTarget
@@ -335,14 +337,28 @@ def mac_api():
     return api
 
 
-def test_mac_checks_permissions_and_rejects_caps_lock(mac_api):
+def test_mac_checks_permissions_and_rejects_unsupported_keys(mac_api):
     mac_api.ax.AXIsProcessTrusted.return_value = False
     mac_api.quartz.CGPreflightListenEventAccess.return_value = False
     mac_api.av.AVCaptureDevice.authorizationStatusForMediaType_.return_value = 2
-    checks = {item.name: item for item in mac_api.check("caps_lock")}
+    checks = {item.name: item for item in mac_api.check("f13")}
     assert all(not item.ok for item in checks.values())
     assert "Accessibility" in checks["Accessibility"].detail
-    assert "reliable release" in checks["dictation shortcut"].detail
+    assert "caps_lock or f1" in checks["dictation shortcut"].detail
+    assert all(item.ok for item in mac_api.check("caps_lock")[3:])
+
+
+def test_mac_requests_only_missing_permissions(mac_api):
+    mac_api.request_permissions()
+    mac_api.ax.AXIsProcessTrustedWithOptions.assert_not_called()
+    mac_api.quartz.CGRequestListenEventAccess.assert_not_called()
+    mac_api.ax.AXIsProcessTrusted.return_value = False
+    mac_api.quartz.CGPreflightListenEventAccess.return_value = False
+    mac_api.request_permissions()
+    mac_api.ax.AXIsProcessTrustedWithOptions.assert_called_once_with(
+        {mac_api.ax.kAXTrustedCheckOptionPrompt: True}
+    )
+    mac_api.quartz.CGRequestListenEventAccess.assert_called_once_with()
 
 
 def test_mac_allows_undecided_microphone_permission_without_requesting_it(mac_api):
@@ -426,17 +442,133 @@ def test_mac_tap_cleanup_runs_when_ready_callback_fails(mac_api):
     mac_api.quartz.CFRunLoopRemoveSource.assert_called_once()
 
 
-def test_mac_disabled_tap_is_reported(mac_api):
+def test_mac_disabled_tap_is_reenabled(mac_api):
     q = mac_api.quartz
+    stopped = threading.Event()
+    results = []
 
     def pump(*args):
         callback = q.CGEventTapCreate.call_args.args[4]
-        callback(None, q.kCGEventTapDisabledByTimeout, {}, None)
+        for event_type in (
+            q.kCGEventTapDisabledByTimeout,
+            q.kCGEventTapDisabledByUserInput,
+        ):
+            results.append(callback(None, event_type, {}, None))
+        stopped.set()
 
     q.CFRunLoopRunInMode.side_effect = pump
-    with pytest.raises(DesktopUnavailableError, match="disabled"):
-        mac_api.listen("f8", Mock(), Mock(), threading.Event())
+    mac_api.listen("f8", Mock(), Mock(), stopped)
+    assert results == [{}, {}]
+    tap = q.CGEventTapCreate.return_value
+    assert q.CGEventTapEnable.call_args_list == [
+        call(tap, True),
+        call(tap, True),
+        call(tap, True),
+        call(tap, False),
+    ]
     q.CFMachPortInvalidate.assert_called_once()
+
+
+HIDUTIL_OUTPUT = """(
+        {
+        HIDKeyboardModifierMappingDst = 30064771113;
+        HIDKeyboardModifierMappingSrc = 30064771129;
+    },
+        {
+        HIDKeyboardModifierMappingDst = 30064771300;
+        HIDKeyboardModifierMappingSrc = 30064771296;
+    }
+)
+"""
+
+
+@pytest.fixture
+def hidutil(monkeypatch):
+    commands = []
+
+    def run(command, **kwargs):
+        commands.append(command)
+        if command[2] == "--get":
+            return SimpleNamespace(stdout=hidutil.output)
+        return SimpleNamespace(stdout="")
+
+    hidutil = SimpleNamespace(output=HIDUTIL_OUTPUT, commands=commands)
+    monkeypatch.setattr(mac_module.subprocess, "run", run)
+    return hidutil
+
+
+def mapping_writes(commands):
+    return [
+        [
+            (
+                item["HIDKeyboardModifierMappingSrc"],
+                item["HIDKeyboardModifierMappingDst"],
+            )
+            for item in json.loads(command[3])["UserKeyMapping"]
+        ]
+        for command in commands
+        if command[2] == "--set"
+    ]
+
+
+def test_mac_caps_lock_remap_replaces_and_restores_user_mappings(mac_api, hidutil):
+    q = mac_api.quartz
+    q.CGEventSourceFlagsState.return_value = 0
+    q.kCGEventFlagMaskAlphaShift = 0x10000
+    stopped = threading.Event()
+    emitted = []
+
+    def pump(*args):
+        assert len(mapping_writes(hidutil.commands)) == 1
+        callback = q.CGEventTapCreate.call_args.args[4]
+        callback(None, 10, {9: 79}, None)
+        callback(None, 11, {9: 79}, None)
+        stopped.set()
+
+    q.CFRunLoopRunInMode.side_effect = pump
+    mac_api.listen(
+        "caps_lock", lambda down, raw: emitted.append((down, raw)), Mock(), stopped
+    )
+    assert emitted == [(True, False), (False, False)]
+    caps, escape = 0x700000039, 0x700000029
+    other = (0x7000000E0, 0x7000000E4)
+    assert mapping_writes(hidutil.commands) == [
+        [other, (caps, 0x70000006D)],
+        [(caps, escape), other],
+    ]
+
+
+def test_mac_caps_lock_remap_discards_one_left_by_a_crash(hidutil):
+    hidutil.output = """(
+        {
+        HIDKeyboardModifierMappingDst = 30064771181;
+        HIDKeyboardModifierMappingSrc = 30064771129;
+    }
+)"""
+    with mac_module.caps_lock_as_f18():
+        pass
+    assert mapping_writes(hidutil.commands) == [[(0x700000039, 0x70000006D)], []]
+
+
+def test_mac_caps_lock_must_be_off_before_remapping(mac_api, hidutil):
+    q = mac_api.quartz
+    q.kCGEventFlagMaskAlphaShift = 0x10000
+    q.CGEventSourceFlagsState.return_value = 0x10000
+    with pytest.raises(DesktopUnavailableError, match="Turn off Caps Lock"):
+        mac_api.listen("caps_lock", Mock(), Mock(), threading.Event())
+    assert hidutil.commands == []
+    q.CGEventTapCreate.assert_not_called()
+
+
+def test_mac_caps_lock_remap_failure_suggests_function_key(monkeypatch):
+    monkeypatch.setattr(
+        mac_module.subprocess, "run", Mock(side_effect=FileNotFoundError())
+    )
+    with (
+        pytest.raises(DesktopUnavailableError, match="function key"),
+        mac_module.caps_lock_as_f18(),
+    ):
+        pass
 
 
 @pytest.mark.skipif(sys.platform != "win32", reason="Windows SDK smoke check")
@@ -450,17 +582,32 @@ def test_mac_sdk_bindings_load_without_requesting_permissions():
     api = MacOSAPI()
     for name in [
         "CGPreflightListenEventAccess",
+        "CGRequestListenEventAccess",
         "CGEventTapCreate",
         "CGEventKeyboardSetUnicodeString",
+        "CGEventSourceFlagsState",
         "CFMachPortInvalidate",
     ]:
         assert callable(getattr(api.quartz, name))
+    assert api.quartz.kCGEventFlagMaskAlphaShift
     assert callable(api.ax.AXUIElementCopyAttributeValue)
+    assert callable(api.ax.AXIsProcessTrustedWithOptions)
+    assert api.ax.kAXTrustedCheckOptionPrompt
+
+
+@pytest.mark.skipif(sys.platform != "darwin", reason="macOS hidutil check")
+def test_mac_hidutil_remap_round_trips():
+    before = mac_module._key_mappings()
+    with mac_module.caps_lock_as_f18():
+        assert mac_module.CAPS_LOCK_REMAP in mac_module._key_mappings()
+    assert mac_module._key_mappings() == [
+        item for item in before if item != mac_module.CAPS_LOCK_REMAP
+    ]
 
 
 def test_platform_hotkey_defaults():
     assert WindowsDesktop(Settings()).hotkey == "caps_lock"
-    assert MacOSDesktop(Settings()).hotkey == "f8"
+    assert MacOSDesktop(Settings()).hotkey == "caps_lock"
     assert WindowsDesktop(Settings(hotkey="f10")).hotkey == "f10"
 
 
