@@ -278,7 +278,9 @@ EOF
         log "Installing Ollama"
         curl -fsSL https://ollama.com/install.sh -o "${work_dir}/ollama-install.sh"
         printf 'Running the Ollama installer downloaded from https://ollama.com/install.sh\n'
-        sh "${work_dir}/ollama-install.sh"
+        # Start Ollama below by path; the installer's start can run before macOS
+        # registers the new app by name.
+        OLLAMA_NO_START=1 sh "${work_dir}/ollama-install.sh"
         ollama_bin="$(command -v ollama || echo "${ollama_app_bin}")"
     fi
     [[ -x "${ollama_bin}" ]] || fail "Ollama was not found after installation."
@@ -286,7 +288,7 @@ EOF
     if ! wait_for_url http://127.0.0.1:11434/api/tags 2; then
         log "Starting Ollama"
         if [[ -d /Applications/Ollama.app ]]; then
-            open -a Ollama --args hidden
+            open /Applications/Ollama.app --args hidden
         else
             nohup "${ollama_bin}" serve >"${log_dir}/ollama.log" 2>&1 &
         fi
