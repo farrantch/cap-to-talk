@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import os
 import threading
+import time
 from dataclasses import replace
 from pathlib import Path
 from types import SimpleNamespace
@@ -11,6 +12,7 @@ import pytest
 
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 pytest.importorskip("PySide6")
+from PySide6.QtCore import Qt  # noqa: E402
 from PySide6.QtWidgets import QApplication  # noqa: E402
 
 from cap_to_talk import gui, gui_runtime  # noqa: E402
@@ -32,6 +34,7 @@ def window(application, tmp_path):
     if window.controller.thread:
         window.controller.thread.join(5)
     window.hide()
+    window.overlay.deleteLater()
     window.deleteLater()
     application.processEvents()
 
@@ -161,3 +164,47 @@ def test_microphone_test_stays_local(monkeypatch):
     )
     assert record.call_args.kwargs["device"] == "USB Mic"
     assert record.call_args.kwargs["blocking"] is True
+
+
+def test_dictation_status_shows_overlay_for_its_timeout(window, application):
+    overlay = window.overlay
+    window.controller.overlay.emit("🎙 Recording", 50)
+    application.processEvents()
+
+    assert overlay.isVisible()
+    assert overlay.text() == "🎙 Recording"
+    assert overlay.windowFlags() & Qt.WindowType.WindowDoesNotAcceptFocus
+    assert overlay.testAttribute(Qt.WidgetAttribute.WA_ShowWithoutActivating)
+    assert overlay.testAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents)
+    area = overlay.screen().availableGeometry()
+    assert area.contains(overlay.frameGeometry())
+
+    deadline = time.monotonic() + 3
+    while overlay.isVisible() and time.monotonic() < deadline:
+        application.processEvents()
+        time.sleep(0.01)
+    assert not overlay.isVisible()
+
+
+def test_overlay_hides_when_dictation_stops(window, application):
+    window.controller.overlay.emit("⏳ Transcribing…", 60_000)
+    window.controller.finished.emit("")
+    application.processEvents()
+    assert not window.overlay.isVisible()
+
+
+def test_dictation_messages_reach_the_window_and_overlay(application):
+    controller = gui_runtime.DictationController()
+    statuses, overlays = [], []
+    controller.status.connect(statuses.append)
+    controller.overlay.connect(
+        lambda message, timeout: overlays.append((message, timeout))
+    )
+    desktop = gui_runtime.StatusDesktop(Mock(), controller)
+
+    desktop.notify("✓ Dictated", 800)
+    controller.stopped.set()
+    desktop.notify("Late result", 800)
+
+    assert statuses == ["✓ Dictated"]
+    assert overlays == [("✓ Dictated", 800)]

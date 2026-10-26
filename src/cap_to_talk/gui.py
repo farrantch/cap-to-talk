@@ -62,6 +62,7 @@ from cap_to_talk.config import (
 from cap_to_talk.credentials import delete_key, save_key
 from cap_to_talk.gui_runtime import DictationController, check_setup, test_microphone
 from cap_to_talk.settings_store import settings_document, write_settings
+from cap_to_talk.status_overlay import StatusOverlay
 
 RELEASES_URL = "https://github.com/farrantch/cap-to-talk/releases"
 GUIDE_URL = "https://github.com/farrantch/cap-to-talk/blob/main/docs/desktop-app.md"
@@ -222,6 +223,8 @@ class SettingsWindow(QMainWindow):
         self.controller = DictationController()
         self.controller.status.connect(self.set_status)
         self.controller.finished.connect(self._dictation_finished)
+        self.overlay = StatusOverlay()
+        self.controller.overlay.connect(self.overlay.show_message)
         self.tasks = TaskSignals()
         self.tasks.done.connect(self._task_finished)
         self.setWindowTitle("Cap To Talk")
@@ -463,6 +466,7 @@ class SettingsWindow(QMainWindow):
 
     def _dictation_finished(self, error: str) -> None:
         self.active = False
+        self.overlay.hide()
         self.set_status(error or "Stopped")
         if error:
             self.results.setPlainText(error)

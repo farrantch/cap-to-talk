@@ -67,21 +67,23 @@ def test_microphone(settings: Settings) -> str:
 
 
 class StatusDesktop:
-    def __init__(self, backend: Any, status: Any, stopped: threading.Event) -> None:
+    def __init__(self, backend: Any, controller: DictationController) -> None:
         self.backend = backend
-        self.status = status
-        self.stopped = stopped
+        self.controller = controller
 
     def __getattr__(self, name: str) -> Any:
         return getattr(self.backend, name)
 
     def notify(self, message: str, timeout: int = 1500) -> None:
-        if not self.stopped.is_set():
-            self.status.emit(message)
+        if not self.controller.stopped.is_set():
+            self.controller.status.emit(message)
+            self.controller.overlay.emit(message, timeout)
 
 
 class DictationController(QObject):
     status = Signal(str)
+    # Dictation messages and how long, in milliseconds, to show them on screen.
+    overlay = Signal(str, int)
     finished = Signal(str)
 
     def __init__(self) -> None:
@@ -111,7 +113,7 @@ class DictationController(QObject):
                 return
             backend = create_desktop_backend(settings)
             self.application = VoiceDictationApp(
-                settings, desktop=StatusDesktop(backend, self.status, self.stopped)
+                settings, desktop=StatusDesktop(backend, self)
             )
             if self.stopped.is_set():
                 self.application.request_stop()
