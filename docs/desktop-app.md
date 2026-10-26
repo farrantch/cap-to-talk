@@ -90,6 +90,9 @@ settings and credentials in place.
 ## Testing status
 
 Headless tests cover settings changes, saved-key isolation, checks, shutdown, and
-packaged startup. macOS/Windows adapter and installer behavior still requires
-real desktop testing. The first release targets macOS 15+, Windows 11 x64,
-and Ubuntu 24.04+ x64 with X11.
+packaged startup. On a GitHub-hosted macOS 15 runner, the Mac installer, reinstall,
+and uninstall, the Caps Lock and F8 listeners, Unicode insertion into TextEdit,
+Ollama cleanup, and the bundled app's startup have been checked. Local OpenASR
+transcription could not run on the runner's paravirtual GPU, and microphone
+recording needs a real Mac. Windows still requires real desktop testing. The
+first release targets macOS 15+, Windows 11 x64, and Ubuntu 24.04+ x64 with X11.
