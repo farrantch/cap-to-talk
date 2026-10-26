@@ -6,7 +6,7 @@
   [![CI](https://github.com/farrantch/cap-to-talk/actions/workflows/ci.yml/badge.svg)](https://github.com/farrantch/cap-to-talk/actions/workflows/ci.yml)
   [![Latest release](https://img.shields.io/github/v/release/farrantch/cap-to-talk)](https://github.com/farrantch/cap-to-talk/releases/latest)
   [![License: MIT](https://img.shields.io/badge/license-MIT-31c3e0.svg)](LICENSE)
-  ![Platform: Linux/X11](https://img.shields.io/badge/platform-Linux%2FX11-ff6b5f.svg)
+  ![Platforms: Linux/X11, macOS](https://img.shields.io/badge/platform-Linux%2FX11%20%7C%20macOS-ff6b5f.svg)
 </div>
 
 ![Cap To Talk recording, transcription, cleanup, and insertion demo](docs/assets/demo.gif)
@@ -24,14 +24,14 @@ that transcribes and cleans up in a single request, or disable cleanup.
 
 | Platform | Default shortcut | Status |
 | --- | --- | --- |
-| Linux/X11 | Caps Lock | Existing installer and desktop integration |
-| Windows | Caps Lock | Experimental source adapter; desktop testing needed |
-| macOS | F8 | Experimental source adapter; desktop testing needed |
+| Linux/X11 | Caps Lock | Installer with local models and desktop integration |
+| macOS 15+ | Caps Lock | Beta app with a one-line installer and local models |
+| Windows | Caps Lock | Experimental installer; desktop testing needed |
 
 All platforms use the same provider configuration and dictation pipeline.
 See the [desktop app guide](docs/desktop-app.md) for the settings window and
-[release guide](docs/releasing.md) for installer builds. Public signed installers
-are pending desktop validation and signing setup.
+[release guide](docs/releasing.md) for installer builds. Beta installers are
+not yet signed by Apple or Microsoft.
 
 ## Desktop app preview
 
@@ -46,6 +46,31 @@ cap-to-talk-desktop
 Use **Check setup** and **Test microphone** before starting dictation.
 See the [desktop guide](docs/desktop-app.md) for permissions and provider setup.
 Maintainers can create native installers using the [release workflow](docs/releasing.md).
+
+## Install on macOS
+
+Requires macOS 15 or newer, about 3.5 GB for the local models, and 8 GB RAM.
+In Terminal, run:
+
+```bash
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/farrantch/cap-to-talk/main/install-macos.sh)"
+```
+
+The installer downloads the newest release, verifies its checksum, and installs
+Cap To Talk into Applications. It also installs OpenASR and Ollama from their
+official installers if they are missing, downloads the local models, and starts
+OpenASR at login. Rerun the same command to update. Add `--skip-local-services`
+to use only cloud or existing [AI providers](docs/providers.md).
+
+Then open Cap To Talk and click **Start dictation**. Enable Cap To Talk under
+**System Settings > Privacy & Security > Accessibility** and **Input Monitoring**
+when asked, quit and reopen it, and start dictation again. Hold Caps Lock to talk;
+Cap To Talk remaps it to F18 while dictation runs and restores it when stopped.
+
+Beta builds are not signed by Apple. The installer clears the download quarantine
+flag, so Gatekeeper does not block the app. A disk image downloaded through a
+browser needs **Open Anyway** in Privacy & Security. Because each update counts
+as a new app, macOS asks for Accessibility and Input Monitoring again after updates.
 
 ## Linux requirements
 
@@ -92,8 +117,8 @@ or `--yes` for an unattended install; flags can be combined.
 | Hold the dictation key, then release | Transcribe, clean up, and insert |
 | Hold **Shift + the dictation key**, then release | Request raw transcription |
 
-The dictation key defaults to Caps Lock on Linux/Windows and F8 on macOS.
-Choose another function key with `[input].hotkey = "f9"`. Hold Shift before
+The dictation key defaults to Caps Lock. Choose a function key instead
+in the desktop app or with `[input].hotkey = "f9"`. Hold Shift before
 pressing the key to select raw mode; release the keys before text is inserted.
 
 Check the setup at any time:
@@ -185,6 +210,13 @@ curl -f http://127.0.0.1:8080/health
 systemctl --user status cap-to-talk-openasr.service
 ```
 
+On macOS, check the login service and its log:
+
+```bash
+launchctl print "gui/$UID/io.github.farrantch.cap-to-talk.openasr" | head
+tail ~/Library/Logs/cap-to-talk/openasr.log
+```
+
 ### Cleanup fails or raw text is inserted
 
 ```bash
@@ -199,7 +231,18 @@ check the active provider configuration.
 
 </details>
 
-## Uninstall on Linux
+## Uninstall
+
+On macOS, run the installer with `--uninstall`:
+
+```bash
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/farrantch/cap-to-talk/main/install-macos.sh)" -- --uninstall
+```
+
+It removes the app and the OpenASR login service. Settings, saved keys, models,
+OpenASR, and Ollama are kept.
+
+On Linux:
 
 ```bash
 ./uninstall.sh

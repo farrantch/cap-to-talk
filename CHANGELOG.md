@@ -5,8 +5,16 @@ All notable changes to Cap To Talk are documented here. This project follows
 
 ## [Unreleased]
 
+## [0.3.0b1] - 2026-10-26
+
 ### Added
 
+- macOS installer command that installs the app, OpenASR with a login service,
+  Ollama, the local models, and default vocabulary files. It also updates and
+  uninstalls.
+- Caps Lock dictation on macOS, remapped to F18 while dictation runs and
+  restored afterward. Starting dictation requests Accessibility and Input
+  Monitoring access when missing.
 - Desktop settings and tray/menu-bar controls, microphone selection and local
   recording checks, provider setup, and explicit credential-store selection.
 - API-key storage in the native OS credential store, scoped to each endpoint
@@ -16,8 +24,8 @@ All notable changes to Cap To Talk are documented here. This project follows
 - Experimental native Windows and macOS adapters with shortcut handling,
   permission diagnostics, window targeting, Unicode insertion, and shared lifecycle
   tests. Real desktop validation is still pending.
-- Configurable `input.hotkey`: Caps Lock or F1–F12 on Windows/Linux; F1–F12 on
-  macOS, where the default is F8. Shift selects raw transcription.
+- Configurable `input.hotkey`: Caps Lock (the default) or F1–F12 on every
+  platform. Shift selects raw transcription.
 - Platform configuration directories and OS-specific dependencies. CI includes
   shared tests and native SDK smoke tests on macOS and Windows.
 - Common desktop interface with a Linux/X11 adapter. Microphone streams and
@@ -36,6 +44,9 @@ All notable changes to Cap To Talk are documented here. This project follows
 
 ### Changed
 
+- Tag builds publish unsigned installers when no signing accounts are configured.
+- The macOS shortcut listener resumes after macOS disables a slow event tap
+  instead of stopping dictation.
 - Prepare WAV uploads in memory so quitting during a request leaves no temporary
   recording file. Stopping dictation prevents late provider results from being inserted.
 - Bumped the development version to 0.3.0b1 for the desktop beta.
@@ -69,6 +80,7 @@ All notable changes to Cap To Talk are documented here. This project follows
 - Privacy-conscious logging and immediate temporary-audio cleanup.
 - Automated tests, linting, dependency auditing, and CodeQL analysis.
 
-[Unreleased]: https://github.com/farrantch/cap-to-talk/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/farrantch/cap-to-talk/compare/v0.3.0b1...HEAD
+[0.3.0b1]: https://github.com/farrantch/cap-to-talk/compare/v0.2.0...v0.3.0b1
 [0.2.0]: https://github.com/farrantch/cap-to-talk/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/farrantch/cap-to-talk/releases/tag/v0.1.0

@@ -16,8 +16,8 @@ rate = 16000
 post_roll_seconds = 0.25
 
 [input]
-# auto: Caps Lock on Windows, the legacy keycode on Linux, F8 on macOS.
-# Choices: auto, caps_lock (Linux/Windows), f1 through f12 (all platforms).
+# auto: Caps Lock on macOS and Windows, the legacy keycode on Linux.
+# Choices: auto, caps_lock, or f1 through f12.
 hotkey = "auto"
 # X11 keycode used for auto/caps_lock on Linux; normally Caps Lock.
 ptt_keycode = 66

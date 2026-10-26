@@ -1,8 +1,10 @@
-# Desktop app preview
+# Desktop app
 
-The settings app is available in source and local builds. Public signed installers
-have not been released yet. Maintainers can generate test downloads with the
-[desktop build workflow](releasing.md).
+The settings app ships in the beta installers on the
+[releases page](https://github.com/farrantch/cap-to-talk/releases). On macOS,
+use the [one-line installer](../README.md#install-on-macos), which also sets up
+the local models. The installers are not yet signed by Apple or Microsoft.
+Maintainers can generate test downloads with the [desktop build workflow](releasing.md).
 
 ## Run from source
 
@@ -24,8 +26,9 @@ Stop an existing command-line instance before starting dictation in the GUI.
 2. Open **AI providers**. Choose separate transcription and optional cleanup,
    or one audio-capable model. Enter a model name available to your provider account.
 3. For a remote provider, choose **Saved on this computer** and paste your API key.
-   Use **No API key** for an unauthenticated local service. Local services and model
-   downloads must be set up separately.
+   Use **No API key** for an unauthenticated local service. The Mac and Linux
+   installers set up the default local services and models; on Windows, set
+   them up separately.
 4. Click **Save settings**, then **Check setup**. Checks can contact the selected
    provider's health endpoint; they do not send a recording.
 5. Click **Test microphone (3 s)** and speak. This checks recording locally and
@@ -38,11 +41,12 @@ See [provider examples](providers.md) for endpoint and model requirements.
 
 ### Permissions
 
-- **macOS:** allow Cap To Talk in Accessibility and Input Monitoring under
-  System Settings > Privacy & Security. Allow Microphone access when requested.
-  For source launches, the responsible application may be your terminal or Python.
-  Restart after changing permissions. The default key is F8; some keyboards
-  require Fn + F8.
+- **macOS:** starting dictation asks for Accessibility and Input Monitoring.
+  Enable Cap To Talk in both lists under System Settings > Privacy & Security,
+  then quit and reopen it. Allow Microphone access when requested. For source
+  launches, the responsible application may be your terminal or Python. The
+  default key is Caps Lock, remapped to F18 while dictation runs; turn Caps Lock
+  off before starting. Unsigned beta updates need these permissions granted again.
 - **Windows:** allow desktop applications to use the microphone. The default
   key is Caps Lock. Input into applications running with higher privileges may fail.
 - **Linux:** use an X11 session. The default key is Caps Lock. The GUI prepares

@@ -1,8 +1,7 @@
 # Building and releasing desktop apps
 
-The project version is currently `0.3.0b1`. The desktop UI and installer recipes
-are implemented; real macOS/Windows validation and signing accounts are still
-needed before a public beta.
+The project version is currently `0.3.0b1`. Beta releases are unsigned until
+the signing accounts below are configured.
 
 ## Local builds
 
@@ -52,7 +51,11 @@ checks, then uploads installers and SHA-256 checksums as artifacts for 14 days.
 
 Unsigned test artifacts are explicitly named `unsigned-test`. They are for
 testers who understand OS installation prompts. They do not create a GitHub release.
-Selecting **signed** exercises the same signing path used for release candidates.
+Selecting **signed** requires every Mac and Windows signing credential and fails
+if any is missing.
+
+Mac builds also install the disk image with `install-macos.sh --skip-local-services`
+and uninstall it again. The installer's local-model setup is not run in CI.
 
 ## macOS signing and notarization
 
@@ -114,15 +117,18 @@ receive SmartScreen prompts while reputation develops; see
 2. Update both version declarations in `pyproject.toml` and
    `src/cap_to_talk/__init__.py`, plus release notes and the changelog.
 3. Commit the reviewed changes and create a matching tag, such as `v0.3.0b1`.
-4. Push the tag. Tag builds require signing; missing credentials fail the build.
+4. Push the tag. Tag builds sign Mac installers when the Apple secrets are set
+   and Windows installers when the Azure variables are set; otherwise those
+   installers are unsigned. Keep the release notes accurate about which are signed.
 5. After every platform succeeds, the workflow verifies the checksums again and
    creates a **draft prerelease** with all four installers, combined checksums,
    and the release notes.
 6. Review the draft downloads and testing results, then publish the prerelease.
+   `install-macos.sh` installs the newest published release, including prereleases.
 
-Linux packages use checksums; Mac and Windows packages additionally use platform
-signing. A failed platform, invalid checksum, or signing failure prevents the
-draft-release job. Manual builds do not publish anything.
+All packages use checksums; signed Mac and Windows packages additionally use
+platform signing. A failed platform, invalid checksum, or signing failure prevents
+the draft-release job. Manual builds do not publish anything.
 
 The first workflow deliberately creates prereleases. Promote a tested beta
 through GitHub's release editor when it is ready. The app links to the releases

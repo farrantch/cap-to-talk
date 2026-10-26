@@ -233,7 +233,7 @@ if [[ "${install_local_services}" == true ]]; then
     [[ -n "${openasr_bin}" ]] || fail "OpenASR was not found after installation."
 
     log "Preparing the OpenASR model"
-    "${openasr_bin}" pull "${asr_model}" --yes </dev/null
+    "${openasr_bin}" pull "${asr_model}"
 
     if launchctl print "gui/${UID}/${agent_label}" >/dev/null 2>&1 \
         || ! wait_for_url http://127.0.0.1:8080/health 2; then
@@ -294,7 +294,7 @@ EOF
     wait_for_url http://127.0.0.1:11434/api/tags 60 || fail "Ollama did not become ready."
 
     log "Preparing the cleanup model"
-    "${ollama_bin}" pull "${rewrite_model}" </dev/null
+    "${ollama_bin}" pull "${rewrite_model}"
 
     wait_for_url http://127.0.0.1:8080/health 60 \
         || fail "OpenASR did not become ready. Check ${log_dir}/openasr.log."

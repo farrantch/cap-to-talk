@@ -3,7 +3,8 @@
 Cap To Talk has adapters for Linux/X11, Windows, and macOS. The Windows and macOS
 adapters are experimental: their behavior is covered by simulated tests, but
 recording, permissions, and insertion still need validation on real desktops.
-The Linux shell installer remains the supported automated setup.
+The Linux and [macOS installers](../README.md#install-on-macos) set up the app
+and local models; this page covers running from a source checkout.
 
 ## macOS and Windows setup
 
@@ -52,26 +53,31 @@ hotkey = "auto"
 
 | Setting | Linux/X11 | Windows | macOS |
 | --- | --- | --- | --- |
-| `auto` | Legacy `ptt_keycode` (Caps Lock by default) | Caps Lock | F8 |
-| `caps_lock` | Legacy `ptt_keycode` | Caps Lock | Unsupported |
+| `auto` | Legacy `ptt_keycode` (Caps Lock by default) | Caps Lock | Caps Lock |
+| `caps_lock` | Legacy `ptt_keycode` | Caps Lock | Caps Lock |
 | `f1` through `f12` | Selected function key | Selected function key | Selected function key |
 
 You can also set `CAP_TO_TALK_HOTKEY=f9`. Restart after changing settings.
 Hold Shift before pressing the dictation key for raw transcription. Auto-repeat
 does not restart recording or change the mode selected at the first press.
 
-On Mac keyboards with media controls, use Fn/Globe + F8 or enable standard
-function keys in Keyboard settings. See [Apple's function-key instructions](https://support.apple.com/en-us/102439).
-Caps Lock is excluded on macOS because its toggle events do not provide the
-press/release behavior this hold-to-talk implementation needs.
+macOS reports Caps Lock only as a toggle, so while dictation runs Cap To Talk
+remaps it to F18 with `hidutil` and listens for F18. Stopping restores your
+previous `hidutil` key mappings; a crash leaves the remap until the next start
+and stop, or a restart. Turn Caps Lock off before starting. If you remapped
+Caps Lock in **System Settings > Keyboard > Modifier Keys**, choose a function
+key instead. Function keys on Mac keyboards with media controls need Fn/Globe
+held, or standard function keys enabled in Keyboard settings; see
+[Apple's function-key instructions](https://support.apple.com/en-us/102439).
 
 ### Grant access and run
 
 On macOS, enable the terminal or Python application used to launch Cap To Talk
 in **System Settings > Privacy & Security > Accessibility** and **Input Monitoring**.
 Restart that application after changing permissions. Microphone access is requested
-when recording first opens; allow it for the same application. The diagnostic
-command reports denied access without requesting new permissions. See
+when recording first opens; allow it for the same application. Starting dictation
+shows the Accessibility and Input Monitoring prompts when access is missing; the
+diagnostic command only reports it. See
 [Apple's input monitoring settings](https://support.apple.com/guide/mac-help/control-access-to-input-monitoring-on-mac-mchl4cedafb6/mac).
 
 ```bash
