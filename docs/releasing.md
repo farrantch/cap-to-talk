@@ -54,7 +54,7 @@ testers who understand OS installation prompts. They do not create a GitHub rele
 Selecting **signed** requires every Mac and Windows signing credential and fails
 if any is missing.
 
-Mac builds also install the disk image with `install.sh --skip-local-services`
+Mac builds also install the disk image with `install.sh --setup later`
 and uninstall it again. The installer's local-model setup is not run in CI.
 
 ## macOS signing and notarization

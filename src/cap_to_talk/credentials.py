@@ -6,9 +6,10 @@ import sys
 from typing import Any
 from urllib.parse import urlsplit
 
-from cap_to_talk.config import ProviderSettings
+from cap_to_talk.config import ProviderSettings, Settings
 
 SERVICE = "cap-to-talk"
+KEY_SECTIONS = ("transcription", "rewrite", "dictation")
 
 
 class CredentialError(RuntimeError):
@@ -35,8 +36,8 @@ def _backend() -> Any:
         return Keyring()
     except (ImportError, RuntimeError) as error:
         raise CredentialError(
-            "System credential storage is unavailable. Install the desktop extra "
-            "and unlock your credential store, or use an environment variable."
+            "System credential storage is unavailable. Unlock your credential "
+            "store, or use an environment variable."
         ) from error
 
 
@@ -60,6 +61,17 @@ def save_key(config: ProviderSettings, secret: str) -> None:
             "Cannot save the API key. Unlock your system credential store "
             "or choose an environment variable. The key was not saved to a file."
         ) from None
+
+
+def save_section_key(settings: Settings, section: str, secret: str) -> str:
+    """Save the key for one provider section; return the credential account."""
+    config = getattr(settings, f"{section}_config")
+    if config.api_key_source != "keyring":
+        raise CredentialError(
+            f"Set {section}.api_key_source to keyring before saving a key."
+        )
+    save_key(config, secret)
+    return credential_account(config)
 
 
 def delete_key(config: ProviderSettings) -> None:

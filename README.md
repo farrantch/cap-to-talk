@@ -24,14 +24,29 @@ On Linux (X11) or macOS 15+, run:
 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/farrantch/cap-to-talk/main/install.sh)"
 ```
 
-This installs Cap To Talk, OpenASR, Ollama, and about 3.5 GB of local models;
-8 GB of RAM is recommended. Run it again to update. To pass options, add them
-after `--`, for example `... install.sh)" -- --autostart`:
+It asks how Cap To Talk should turn speech into text:
+
+| Setup | What it uses |
+| --- | --- |
+| Local models (default) | OpenASR and Ollama on your computer: private, free, no account |
+| Claude cleanup | Local speech recognition, wording cleaned up by Claude (Anthropic API key) |
+| OpenAI | OpenAI `gpt-audio-1.5` for everything (OpenAI API key) |
+| Later | Only the app; choose [providers](docs/providers.md) yourself |
+
+Local models come in three sizes: standard (about 3.5 GB, 8 GB of RAM), light
+(2.4 GB, 4 GB of RAM), or best (7.6 GB, 16 GB of RAM). For a cloud setup, paste
+your API key when asked, or press Enter and add it later. Keys go into Keychain
+on macOS or your login keyring on Linux, never into a file.
+
+Run the command again to update; your choices are kept. To pass options, add
+them after `--`, for example `... install.sh)" -- --autostart`:
 
 | Option | Effect |
 | --- | --- |
+| `--setup local\|claude\|openai\|later` | Choose the setup without being asked |
+| `--size standard\|light\|best` | Choose the local model size |
+| `--yes` | Accept the defaults (local, standard) |
 | `--autostart` | Linux: start Cap To Talk at login |
-| `--skip-local-services` | Skip the local models and use [other providers](docs/providers.md) |
 | `--uninstall` | Remove Cap To Talk; add `--purge` to delete settings too |
 
 After installing:

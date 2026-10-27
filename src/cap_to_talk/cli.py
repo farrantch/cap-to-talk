@@ -16,6 +16,7 @@ import sounddevice as sd
 
 from cap_to_talk import __version__
 from cap_to_talk.config import Settings, load_settings
+from cap_to_talk.credentials import KEY_SECTIONS, CredentialError, save_section_key
 from cap_to_talk.desktop import DesktopUnavailableError, create_desktop_backend
 from cap_to_talk.providers import check_provider
 
@@ -49,6 +50,12 @@ def _parser() -> argparse.ArgumentParser:
         type=int,
         default=0,
         help="retry temporary connection failures for the required AI provider",
+    )
+    parser.add_argument(
+        "--save-key",
+        choices=KEY_SECTIONS,
+        metavar="SECTION",
+        help="save an API key read from standard input for a provider section",
     )
     parser.add_argument("--version", action="version", version=__version__)
     return parser
@@ -123,6 +130,15 @@ def main(argv: list[str] | None = None) -> int:
     except (OSError, ValueError, tomllib.TOMLDecodeError) as error:
         print(f"Configuration error: {error}", file=sys.stderr)
         return 2
+
+    if arguments.save_key:
+        try:
+            account = save_section_key(settings, arguments.save_key, sys.stdin.read())
+        except CredentialError as error:
+            print(f"Credential error: {error}", file=sys.stderr)
+            return 1
+        print(f"Saved the API key for {account}.")
+        return 0
 
     if arguments.command == "check":
         return _check(

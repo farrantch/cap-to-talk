@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import io
 import os
 import threading
 import time
@@ -219,3 +220,21 @@ def test_overlay_draws_its_background(window, application):
     assert abs(padding.green() - 36) <= 2
     assert abs(padding.blue() - 40) <= 2
     assert padding.alpha() >= 230
+
+
+def test_save_key_option_saves_without_opening_a_window(tmp_path, monkeypatch):
+    config = tmp_path / "config.toml"
+    config.write_text(
+        '[pipeline]\nmode = "single"\n[dictation]\nprovider = "openai"\n'
+        'model = "gpt-audio-1.5"\napi_key_source = "keyring"\n'
+    )
+    saved = []
+    monkeypatch.setattr(
+        gui,
+        "save_section_key",
+        lambda settings, section, secret: saved.append((section, secret)) or "acct",
+    )
+    monkeypatch.setattr(gui, "QApplication", Mock(side_effect=AssertionError))
+    monkeypatch.setattr(gui.sys, "stdin", io.StringIO("sk-openai"))
+    assert gui.main(["--config", str(config), "--save-key", "dictation"]) == 0
+    assert saved == [("dictation", "sk-openai")]

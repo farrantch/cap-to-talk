@@ -59,7 +59,13 @@ from cap_to_talk.config import (
     load_settings,
     validate_settings,
 )
-from cap_to_talk.credentials import delete_key, save_key
+from cap_to_talk.credentials import (
+    KEY_SECTIONS,
+    CredentialError,
+    delete_key,
+    save_key,
+    save_section_key,
+)
 from cap_to_talk.gui_runtime import DictationController, check_setup, test_microphone
 from cap_to_talk.settings_store import settings_document, write_settings
 from cap_to_talk.status_overlay import StatusOverlay
@@ -576,8 +582,24 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Cap To Talk desktop settings")
     parser.add_argument("--config", type=Path)
     parser.add_argument("--smoke-test", action="store_true", help=argparse.SUPPRESS)
+    parser.add_argument(
+        "--save-key",
+        choices=KEY_SECTIONS,
+        metavar="SECTION",
+        help="save an API key read from standard input, without opening a window",
+    )
     parser.add_argument("--version", action="version", version=__version__)
     args = parser.parse_args(argv)
+    if args.save_key:
+        # The installer saves keys through the app so they match the app's own.
+        try:
+            settings = load_settings(args.config)
+            account = save_section_key(settings, args.save_key, sys.stdin.read())
+        except (CredentialError, OSError, ValueError) as error:
+            print(f"Could not save the API key: {error}", file=sys.stderr)
+            return 1
+        print(f"Saved the API key for {account}.")
+        return 0
     if args.smoke_test:
         os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
     application = QApplication([sys.argv[0]])
