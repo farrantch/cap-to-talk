@@ -1,16 +1,18 @@
 ## Desktop beta
 
 Cap To Talk now includes a settings window and tray/menu-bar controls,
-configurable microphones and shortcuts, provider selection, and API-key storage
-in the operating system's credential store.
+configurable microphones and shortcuts, provider selection, API-key storage in
+the operating system's credential store, and a bottom-right status popup while
+you dictate.
 
 Choose separate transcription/cleanup providers or one audio-capable model.
 Connect your own provider account or an existing local service.
 
 ### Install
 
-On macOS 15+, run this in Terminal to install the app, OpenASR, Ollama, and the
-local models:
+On macOS 15+, run this in Terminal. It asks whether to use local models
+(OpenASR and Ollama, in three sizes), Claude cleanup, or OpenAI, and sets up
+only what you choose, without asking for an administrator password:
 
 ```bash
 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/farrantch/cap-to-talk/main/install.sh)"

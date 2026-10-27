@@ -5,6 +5,8 @@ All notable changes to Cap To Talk are documented here. This project follows
 
 ## [Unreleased]
 
+## [0.3.0b2] - 2026-10-26
+
 ### Added
 
 - The desktop app shows dictation status in a bottom-right popup, like the
@@ -108,7 +110,8 @@ All notable changes to Cap To Talk are documented here. This project follows
 - Privacy-conscious logging and immediate temporary-audio cleanup.
 - Automated tests, linting, dependency auditing, and CodeQL analysis.
 
-[Unreleased]: https://github.com/farrantch/cap-to-talk/compare/v0.3.0b1...HEAD
+[Unreleased]: https://github.com/farrantch/cap-to-talk/compare/v0.3.0b2...HEAD
+[0.3.0b2]: https://github.com/farrantch/cap-to-talk/compare/v0.3.0b1...v0.3.0b2
 [0.3.0b1]: https://github.com/farrantch/cap-to-talk/compare/v0.2.0...v0.3.0b1
 [0.2.0]: https://github.com/farrantch/cap-to-talk/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/farrantch/cap-to-talk/releases/tag/v0.1.0

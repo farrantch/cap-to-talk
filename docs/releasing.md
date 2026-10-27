@@ -1,6 +1,6 @@
 # Building and releasing desktop apps
 
-The project version is currently `0.3.0b1`. Beta releases are unsigned until
+The project version is currently `0.3.0b2`. Beta releases are unsigned until
 the signing accounts below are configured.
 
 ## Local builds
