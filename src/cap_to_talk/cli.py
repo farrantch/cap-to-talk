@@ -133,11 +133,11 @@ def main(argv: list[str] | None = None) -> int:
 
     if arguments.save_key:
         try:
-            account = save_section_key(settings, arguments.save_key, sys.stdin.read())
+            save_section_key(settings, arguments.save_key, sys.stdin.read())
         except CredentialError as error:
             print(f"Credential error: {error}", file=sys.stderr)
             return 1
-        print(f"Saved the API key for {account}.")
+        print("Saved the API key to the system credential store.")
         return 0
 
     if arguments.command == "check":

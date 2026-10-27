@@ -43,8 +43,9 @@ class StatusOverlay(QLabel):
         self.hide_timer.timeout.connect(self.hide)
         # Configure the native window before its first show, which would
         # otherwise activate Cap To Talk and take focus from the target window.
+        # Only the Cocoa platform has a native window; offscreen tests do not.
         self.macos_configured = (
-            sys.platform != "darwin" or self._configure_macos_window()
+            QGuiApplication.platformName() != "cocoa" or self._configure_macos_window()
         )
 
     def paintEvent(self, event: QPaintEvent) -> None:

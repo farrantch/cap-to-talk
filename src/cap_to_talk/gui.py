@@ -594,11 +594,11 @@ def main(argv: list[str] | None = None) -> int:
         # The installer saves keys through the app so they match the app's own.
         try:
             settings = load_settings(args.config)
-            account = save_section_key(settings, args.save_key, sys.stdin.read())
+            save_section_key(settings, args.save_key, sys.stdin.read())
         except (CredentialError, OSError, ValueError) as error:
             print(f"Could not save the API key: {error}", file=sys.stderr)
             return 1
-        print(f"Saved the API key for {account}.")
+        print("Saved the API key to the system credential store.")
         return 0
     if args.smoke_test:
         os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")

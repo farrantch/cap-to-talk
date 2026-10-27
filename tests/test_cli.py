@@ -186,13 +186,12 @@ def test_save_key_reads_the_key_from_standard_input(tmp_path, monkeypatch, capsy
 
     def save(settings, section, secret):
         saved.append((settings.rewrite_config.provider, section, secret))
-        return "ANTHROPIC_API_KEY@https://api.anthropic.com:443"
 
     monkeypatch.setattr(cli, "save_section_key", save)
     monkeypatch.setattr(cli.sys, "stdin", io.StringIO("sk-test\n"))
     assert cli.main(["--config", str(config), "--save-key", "rewrite"]) == 0
     assert saved == [("anthropic", "rewrite", "sk-test\n")]
-    assert "api.anthropic.com" in capsys.readouterr().out
+    assert "Saved the API key" in capsys.readouterr().out
 
 
 def test_save_key_reports_credential_store_failures(tmp_path, monkeypatch, capsys):

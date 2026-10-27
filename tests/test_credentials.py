@@ -99,10 +99,8 @@ def test_section_key_is_saved_for_that_providers_endpoint(vault):
         model="claude-opus-5-5",
         api_key_source="keyring",
     )
-    account = credentials.save_section_key(
-        Settings(rewrite=rewrite), "rewrite", " sk-test \n"
-    )
-    assert account == "ANTHROPIC_API_KEY@https://api.anthropic.com:443"
+    credentials.save_section_key(Settings(rewrite=rewrite), "rewrite", " sk-test \n")
+    account = "ANTHROPIC_API_KEY@https://api.anthropic.com:443"
     assert items == {("cap-to-talk", account): "sk-test"}
 
 

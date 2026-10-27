@@ -63,15 +63,14 @@ def save_key(config: ProviderSettings, secret: str) -> None:
         ) from None
 
 
-def save_section_key(settings: Settings, section: str, secret: str) -> str:
-    """Save the key for one provider section; return the credential account."""
+def save_section_key(settings: Settings, section: str, secret: str) -> None:
+    """Save the key for one provider section."""
     config = getattr(settings, f"{section}_config")
     if config.api_key_source != "keyring":
         raise CredentialError(
             f"Set {section}.api_key_source to keyring before saving a key."
         )
     save_key(config, secret)
-    return credential_account(config)
 
 
 def delete_key(config: ProviderSettings) -> None:

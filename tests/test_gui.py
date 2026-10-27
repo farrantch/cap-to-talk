@@ -232,7 +232,7 @@ def test_save_key_option_saves_without_opening_a_window(tmp_path, monkeypatch):
     monkeypatch.setattr(
         gui,
         "save_section_key",
-        lambda settings, section, secret: saved.append((section, secret)) or "acct",
+        lambda settings, section, secret: saved.append((section, secret)),
     )
     monkeypatch.setattr(gui, "QApplication", Mock(side_effect=AssertionError))
     monkeypatch.setattr(gui.sys, "stdin", io.StringIO("sk-openai"))
