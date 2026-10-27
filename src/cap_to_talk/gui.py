@@ -59,9 +59,16 @@ from cap_to_talk.config import (
     load_settings,
     validate_settings,
 )
-from cap_to_talk.credentials import delete_key, save_key
+from cap_to_talk.credentials import (
+    KEY_SECTIONS,
+    CredentialError,
+    delete_key,
+    save_key,
+    save_section_key,
+)
 from cap_to_talk.gui_runtime import DictationController, check_setup, test_microphone
 from cap_to_talk.settings_store import settings_document, write_settings
+from cap_to_talk.status_overlay import StatusOverlay
 
 RELEASES_URL = "https://github.com/farrantch/cap-to-talk/releases"
 GUIDE_URL = "https://github.com/farrantch/cap-to-talk/blob/main/docs/desktop-app.md"
@@ -222,6 +229,8 @@ class SettingsWindow(QMainWindow):
         self.controller = DictationController()
         self.controller.status.connect(self.set_status)
         self.controller.finished.connect(self._dictation_finished)
+        self.overlay = StatusOverlay()
+        self.controller.overlay.connect(self.overlay.show_message)
         self.tasks = TaskSignals()
         self.tasks.done.connect(self._task_finished)
         self.setWindowTitle("Cap To Talk")
@@ -463,6 +472,7 @@ class SettingsWindow(QMainWindow):
 
     def _dictation_finished(self, error: str) -> None:
         self.active = False
+        self.overlay.hide()
         self.set_status(error or "Stopped")
         if error:
             self.results.setPlainText(error)
@@ -572,8 +582,24 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Cap To Talk desktop settings")
     parser.add_argument("--config", type=Path)
     parser.add_argument("--smoke-test", action="store_true", help=argparse.SUPPRESS)
+    parser.add_argument(
+        "--save-key",
+        choices=KEY_SECTIONS,
+        metavar="SECTION",
+        help="save an API key read from standard input, without opening a window",
+    )
     parser.add_argument("--version", action="version", version=__version__)
     args = parser.parse_args(argv)
+    if args.save_key:
+        # The installer saves keys through the app so they match the app's own.
+        try:
+            settings = load_settings(args.config)
+            save_section_key(settings, args.save_key, sys.stdin.read())
+        except (CredentialError, OSError, ValueError) as error:
+            print(f"Could not save the API key: {error}", file=sys.stderr)
+            return 1
+        print("Saved the API key to the system credential store.")
+        return 0
     if args.smoke_test:
         os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
     application = QApplication([sys.argv[0]])

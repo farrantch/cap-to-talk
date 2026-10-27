@@ -5,8 +5,28 @@ All notable changes to Cap To Talk are documented here. This project follows
 
 ## [Unreleased]
 
+## [0.3.0b2] - 2026-10-26
+
+### Added
+
+- The desktop app shows dictation status in a bottom-right popup, like the
+  Linux launcher. On macOS it never takes focus from the window you are
+  dictating into, and stays visible over other apps, full-screen apps, and Spaces.
+- The installer asks which setup to use: local models in three sizes, local
+  speech recognition with Claude cleanup, OpenAI `gpt-audio-1.5`, or none yet.
+  It downloads only what the setup needs and offers to save the API key to the
+  system credential store. `--setup` and `--size` choose without asking.
+- `cap-to-talk --save-key SECTION`, and the same option on the desktop app,
+  save an API key read from standard input.
+
 ### Changed
 
+- On macOS, the installer runs Ollama's command-line build as a login service
+  instead of installing Ollama.app, which asks for an administrator password
+  on first launch.
+- Anthropic cleanup requests use low effort, keeping a short rewrite fast.
+- `keyring` is a core dependency, so command-line installs can save keys.
+- `--setup later` replaces `--skip-local-services`.
 - One `install.sh` installs, updates, and uninstalls on both Linux and macOS,
   run with the same curl command. It replaces `install-macos.sh`, `uninstall.sh`,
   and `scripts/install-user.sh`; uninstall is now `install.sh --uninstall`.
@@ -90,7 +110,8 @@ All notable changes to Cap To Talk are documented here. This project follows
 - Privacy-conscious logging and immediate temporary-audio cleanup.
 - Automated tests, linting, dependency auditing, and CodeQL analysis.
 
-[Unreleased]: https://github.com/farrantch/cap-to-talk/compare/v0.3.0b1...HEAD
+[Unreleased]: https://github.com/farrantch/cap-to-talk/compare/v0.3.0b2...HEAD
+[0.3.0b2]: https://github.com/farrantch/cap-to-talk/compare/v0.3.0b1...v0.3.0b2
 [0.3.0b1]: https://github.com/farrantch/cap-to-talk/compare/v0.2.0...v0.3.0b1
 [0.2.0]: https://github.com/farrantch/cap-to-talk/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/farrantch/cap-to-talk/releases/tag/v0.1.0

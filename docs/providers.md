@@ -116,12 +116,13 @@ cleanup pass.
 ## Cloud transcription with optional cleanup
 
 For OpenAI transcription, select a transcription model available to your API
-account. For example, the file transcription API supports `whisper-1`:
+account. For example, `gpt-transcribe` (OpenAI is retiring `whisper-1` and
+`gpt-4o-transcribe` on February 26, 2027):
 
 ```toml
 [transcription]
 provider = "openai"
-model = "whisper-1"
+model = "gpt-transcribe"
 
 [rewrite]
 provider = "none"
@@ -157,14 +158,17 @@ Keep `[transcription]` set to OpenASR and configure:
 ```toml
 [rewrite]
 provider = "anthropic"
-model = "YOUR_CLAUDE_MODEL"
+model = "claude-opus-5-5"
 api_key_env = "ANTHROPIC_API_KEY"
 max_output_tokens = 2048
 ```
 
-Replace the model placeholder with a model available to your Anthropic API
-account, and set `ANTHROPIC_API_KEY` in the launch environment. This uses the
-Messages API at `https://api.anthropic.com/v1/messages`.
+The installer's Claude setup writes this with `api_key_source = "keyring"`.
+Any current Claude model works; `claude-haiku-5-5` is faster and costs less.
+Set `ANTHROPIC_API_KEY` in the launch environment, or save it with
+`cap-to-talk --save-key rewrite`. This uses the Messages API at
+`https://api.anthropic.com/v1/messages` with low effort, since cleanup is a
+short rewrite; older models that do not support effort are rejected.
 
 Only the transcript, cleanup instructions, and relevant vocabulary are sent to
 the cleanup provider. The audio stays with the selected transcription provider.
@@ -242,16 +246,21 @@ or pass them in endpoint URLs.
 
 ## Install and check
 
-The normal installer still prepares the local models. To use existing or cloud
-services without downloading OpenASR, Ollama, or their models:
+The installer sets up local models, Claude cleanup, or OpenAI (see the
+[README](../README.md#install)). To configure other providers yourself without
+downloading OpenASR, Ollama, or their models:
 
 ```bash
-./install.sh --skip-local-services --no-start
+./install.sh --setup later --no-start
 # Edit ~/.config/cap-to-talk/config.toml and configure the launch environment.
+cap-to-talk --save-key rewrite   # optional: save a key read from standard input
 cap-to-talk check --services-only
 ```
 
 Then start Cap To Talk from your applications menu or with `./scripts/start.sh`.
+`--save-key` takes `transcription`, `rewrite`, or `dictation` and needs that
+section's `api_key_source = "keyring"`. The Mac app accepts the same option:
+`"/Applications/Cap To Talk.app/Contents/MacOS/CapToTalk" --save-key rewrite`.
 
 The startup script checks the active pipeline. Missing local services do
 not prevent a cloud configuration from starting. In two-stage mode, an

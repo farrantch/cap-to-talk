@@ -130,7 +130,7 @@ jobs:
       - name: Test the Mac installer
         if: runner.os == 'macOS'
         run: |
-          ./install.sh --yes --no-start --skip-local-services \
+          ./install.sh --yes --no-start --setup later \
             --dmg dist/installers/*.dmg
           test -x "/Applications/Cap To Talk.app/Contents/MacOS/CapToTalk"
           test -s "$HOME/Library/Application Support/cap-to-talk/hotwords.txt"

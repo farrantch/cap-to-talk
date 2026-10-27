@@ -4,7 +4,7 @@ from unittest.mock import Mock
 import pytest
 
 from cap_to_talk import credentials
-from cap_to_talk.config import ProviderSettings
+from cap_to_talk.config import ProviderSettings, Settings, _provider_defaults
 from cap_to_talk.providers import HTTPProvider, ProviderError
 
 
@@ -90,3 +90,22 @@ def test_delete_saved_key(profile, vault):
     credentials.delete_key(profile)
     assert credentials.read_key(profile) == ""
     credentials.delete_key(profile)
+
+
+def test_section_key_is_saved_for_that_providers_endpoint(vault):
+    _, items = vault
+    rewrite = replace(
+        _provider_defaults("anthropic", "rewrite"),
+        model="claude-opus-5-5",
+        api_key_source="keyring",
+    )
+    credentials.save_section_key(Settings(rewrite=rewrite), "rewrite", " sk-test \n")
+    account = "ANTHROPIC_API_KEY@https://api.anthropic.com:443"
+    assert items == {("cap-to-talk", account): "sk-test"}
+
+
+def test_section_key_requires_the_credential_store_source(vault):
+    _, items = vault
+    with pytest.raises(credentials.CredentialError, match="api_key_source"):
+        credentials.save_section_key(Settings(), "rewrite", "sk-test")
+    assert items == {}

@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "cap-to-talk"
-version = "0.3.0b1"
+version = "0.3.0b2"
 description = "Push-to-talk dictation with configurable AI providers"
 readme = "README.md"
 requires-python = ">=3.12"
@@ -22,6 +22,7 @@ classifiers = [
     "Topic :: Multimedia :: Sound/Audio :: Speech",
 ]
 dependencies = [
+    "keyring>=25.6,<26",
     "numpy>=2.0,<3",
     "python-xlib>=0.33,<1; sys_platform == 'linux'",
     "pyobjc-framework-Quartz>=12.2,<13; sys_platform == 'darwin'",
@@ -35,7 +36,6 @@ dependencies = [
 [project.optional-dependencies]
 desktop = [
     "PySide6-Essentials>=6.8,<7",
-    "keyring>=25.6,<26",
     "tomlkit>=0.13,<1",
 ]
 packaging = [

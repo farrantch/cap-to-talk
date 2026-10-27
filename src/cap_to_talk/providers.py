@@ -277,6 +277,8 @@ class AnthropicRewriter(HTTPProvider):
                 "system": system_prompt,
                 "messages": [{"role": "user", "content": user_prompt}],
                 "max_tokens": self.config.max_output_tokens,
+                # Cleanup is a short rewrite; keep thinking brief and fast.
+                "output_config": {"effort": "low"},
                 "stream": False,
             },
         )

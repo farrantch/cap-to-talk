@@ -136,6 +136,7 @@ def test_anthropic_uses_its_own_auth_and_message_format(monkeypatch):
         "system": "Instructions",
         "messages": [{"role": "user", "content": "Original text"}],
         "max_tokens": 2048,
+        "output_config": {"effort": "low"},
         "stream": False,
     }
 

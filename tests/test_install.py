@@ -6,6 +6,8 @@ from pathlib import Path
 
 import pytest
 
+from cap_to_talk.config import load_settings
+
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 PROJECT_FILES = (
     "install.sh",
@@ -52,10 +54,17 @@ class Installer:
                 fake_bin / command,
                 'printf "%s %s\\n" "${0##*/}" "$*" >> "$TEST_CALLS"\n',
             )
+        # A new environment gets a cap-to-talk command that records saved keys.
         self.fake(
             fake_bin / "python3",
             'if [[ "${1:-}" == -m && "${2:-}" == venv ]]; then\n'
-            '    mkdir -p "$3/bin"\n    cp "$0" "$3/bin/python"\nfi\n',
+            '    mkdir -p "$3/bin"\n    cp "$0" "$3/bin/python"\n'
+            '    cp "$TEST_SAVER" "$3/bin/cap-to-talk"\nfi\n',
+        )
+        saver = tmp_path / "saver"
+        self.fake(
+            saver,
+            'printf "cap-to-talk %s key=%s\\n" "$*" "$(cat)" >> "$TEST_CALLS"\n',
         )
         # A clone copies the prepared project, as GitHub would serve it.
         self.fake(
@@ -77,9 +86,11 @@ class Installer:
             "XDG_RUNTIME_DIR": str(tmp_path),
             "TEST_CALLS": str(self.calls),
             "TEST_SOURCE": str(self.project),
+            "TEST_SAVER": str(saver),
         }
         self.env.pop("DISPLAY", None)
-        self.env.pop("CAP_TO_TALK_CONFIRMED", None)
+        for name in ("CAP_TO_TALK_CONFIRMED", "ANTHROPIC_API_KEY", "OPENAI_API_KEY"):
+            self.env.pop(name, None)
 
     @staticmethod
     def fake(path: Path, body: str) -> None:
@@ -112,6 +123,13 @@ class Installer:
     def recorded(self) -> list[str]:
         return self.calls.read_text().splitlines()
 
+    @property
+    def config_file(self) -> Path:
+        return self.config / "cap-to-talk/config.toml"
+
+    def settings(self):
+        return load_settings(self.config_file)
+
 
 @pytest.fixture
 def installer(tmp_path: Path) -> Installer:
@@ -119,7 +137,7 @@ def installer(tmp_path: Path) -> Installer:
 
 
 def test_installs_from_checkout_without_local_services(installer):
-    installer.install("--skip-local-services")
+    installer.install("--setup", "later")
 
     assert installer.recorded() == []
     assert (installer.project / ".venv/bin/python").exists()
@@ -132,7 +150,7 @@ def test_installs_from_checkout_without_local_services(installer):
     assert not (installer.config / "systemd").exists()
 
 
-def test_local_services_install_models_and_openasr_user_service(installer):
+def test_default_setup_installs_standard_local_models(installer):
     installer.install()
 
     calls = installer.recorded()
@@ -145,24 +163,100 @@ def test_local_services_install_models_and_openasr_user_service(installer):
         f"ExecStart={openasr} serve --model qwen3-asr-0.6b --addr 127.0.0.1:8080"
         in service.read_text()
     )
+    settings = installer.settings()
+    assert settings.transcription_config.model == "qwen3-asr-0.6b"
+    assert settings.rewrite_config.provider == "ollama"
+    assert settings.rewrite_config.model == "qwen3:4b-instruct"
+
+
+def test_best_size_downloads_and_configures_the_larger_models(installer):
+    installer.install("--setup", "local", "--size", "best")
+
+    calls = installer.recorded()
+    assert "openasr pull qwen3-asr-1.7b:q8" in calls
+    assert "ollama pull qwen3:8b" in calls
+    service = installer.config / "systemd/user/cap-to-talk-openasr.service"
+    assert "--model qwen3-asr-1.7b " in service.read_text()
+    settings = installer.settings()
+    assert settings.transcription_config.model == "qwen3-asr-1.7b"
+    assert settings.rewrite_config.model == "qwen3:8b"
+
+
+def test_claude_setup_saves_the_key_and_skips_ollama(installer):
+    installer.env["ANTHROPIC_API_KEY"] = "sk-ant-test"
+    installer.install("--setup", "claude")
+
+    calls = installer.recorded()
+    assert "openasr pull qwen3-asr-0.6b:q8" in calls
+    assert not any(call.startswith("ollama") for call in calls)
+    assert (
+        f"cap-to-talk --config {installer.config_file} --save-key rewrite "
+        "key=sk-ant-test" in calls
+    )
+    rewrite = installer.settings().rewrite_config
+    assert (rewrite.provider, rewrite.model) == ("anthropic", "claude-opus-5-5")
+    assert rewrite.api_key_source == "keyring"
+
+
+def test_openai_setup_without_a_key_explains_how_to_add_it(installer):
+    result = installer.run("--no-start", "--skip-system-packages", "--setup", "openai")
+
+    assert result.returncode == 0, result.stderr
+    assert installer.recorded() == []
+    assert "cap-to-talk --save-key dictation" in result.stdout
+    settings = installer.settings()
+    assert settings.pipeline_mode == "single"
+    dictation = settings.dictation_config
+    assert (dictation.provider, dictation.model) == ("openai", "gpt-audio-1.5")
+    assert dictation.api_key_source == "keyring"
+
+
+def test_rerun_keeps_existing_providers_and_switching_resets_keys(installer):
+    installer.env["ANTHROPIC_API_KEY"] = "sk-ant-test"
+    installer.install("--setup", "claude")
+    installer.calls.write_text("")
+    installer.install()
+
+    assert installer.settings().rewrite_config.provider == "anthropic"
+    assert not any(call.startswith("ollama") for call in installer.recorded())
+
+    installer.install("--setup", "local", "--size", "light")
+    rewrite = installer.settings().rewrite_config
+    assert (rewrite.provider, rewrite.model) == ("ollama", "qwen3:1.7b")
+    assert rewrite.api_key_source == "environment"
+    assert "ollama pull qwen3:1.7b" in installer.recorded()
+
+
+def test_later_setup_leaves_the_example_settings_unchanged(installer):
+    installer.install("--setup", "later")
+
+    assert installer.recorded() == []
+    example = PROJECT_ROOT / "config/config.example.toml"
+    assert installer.config_file.read_text() == example.read_text()
+
+
+def test_unknown_setup_is_rejected(installer):
+    result = installer.run("--setup", "cloud")
+    assert result.returncode == 1
+    assert "--setup must be local, claude, openai, or later" in result.stderr
 
 
 def test_rerun_keeps_settings_and_manages_only_its_autostart(installer):
-    installer.install("--skip-local-services", "--autostart")
+    installer.install("--setup", "later", "--autostart")
     contents = installer.autostart.read_text()
     config_file = installer.config / "cap-to-talk/config.toml"
     config_file.write_text("# personalized\n")
-    installer.install("--skip-local-services", "--autostart")
+    installer.install("--setup", "later", "--autostart")
 
     assert installer.autostart.read_text() == contents
     assert "X-GNOME-Autostart-enabled=true" in contents
     assert config_file.read_text() == "# personalized\n"
 
-    installer.install("--skip-local-services")
+    installer.install("--setup", "later")
     assert not installer.autostart.exists()
 
     installer.autostart.write_text("[Desktop Entry]\nExec=/another/cap-to-talk\n")
-    installer.install("--skip-local-services")
+    installer.install("--setup", "later")
     assert (
         installer.autostart.read_text()
         == "[Desktop Entry]\nExec=/another/cap-to-talk\n"
@@ -175,7 +269,11 @@ def test_download_clones_a_copy_and_installs_from_it(installer, tmp_path):
     shutil.copy2(PROJECT_ROOT / "install.sh", download)
 
     result = installer.run(
-        "--no-start", "--skip-system-packages", "--skip-local-services", script=download
+        "--no-start",
+        "--skip-system-packages",
+        "--setup",
+        "later",
+        script=download,
     )
 
     assert result.returncode == 0, result.stderr
@@ -190,7 +288,7 @@ def test_download_clones_a_copy_and_installs_from_it(installer, tmp_path):
 
 
 def test_uninstall_keeps_settings_unless_purged(installer):
-    installer.install("--skip-local-services", "--autostart")
+    installer.install("--setup", "later", "--autostart")
     config_dir = installer.config / "cap-to-talk"
 
     result = installer.run("--uninstall")

@@ -1,3 +1,4 @@
+import io
 import json
 from types import SimpleNamespace
 from unittest.mock import Mock
@@ -173,3 +174,34 @@ def test_run_injects_selected_desktop_into_app(tmp_path, monkeypatch):
     select.assert_called_once()
     assert application.call_args.kwargs == {"desktop": backend}
     application.return_value.run.assert_called_once()
+
+
+def test_save_key_reads_the_key_from_standard_input(tmp_path, monkeypatch, capsys):
+    config = tmp_path / "config.toml"
+    config.write_text(
+        '[rewrite]\nprovider = "anthropic"\nmodel = "claude-opus-5-5"\n'
+        'api_key_source = "keyring"\n'
+    )
+    saved = []
+
+    def save(settings, section, secret):
+        saved.append((settings.rewrite_config.provider, section, secret))
+
+    monkeypatch.setattr(cli, "save_section_key", save)
+    monkeypatch.setattr(cli.sys, "stdin", io.StringIO("sk-test\n"))
+    assert cli.main(["--config", str(config), "--save-key", "rewrite"]) == 0
+    assert saved == [("anthropic", "rewrite", "sk-test\n")]
+    assert "Saved the API key" in capsys.readouterr().out
+
+
+def test_save_key_reports_credential_store_failures(tmp_path, monkeypatch, capsys):
+    def fail(*args):
+        raise cli.CredentialError("Unlock your credential store.")
+
+    monkeypatch.setattr(cli, "save_section_key", fail)
+    monkeypatch.setattr(cli.sys, "stdin", io.StringIO("sk-test"))
+    assert (
+        cli.main(["--config", str(tmp_path / "none.toml"), "--save-key", "rewrite"])
+        == 1
+    )
+    assert "Unlock your credential store" in capsys.readouterr().err
